@@ -1,0 +1,2 @@
+def main(grid):
+    pass

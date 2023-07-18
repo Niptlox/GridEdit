@@ -264,6 +264,14 @@ class Grid:
             1] * _tile_side
         return int(nx // _tile_side), int(ny // _tile_side)
 
+    def add_zoom_at_pos(self, add_zoom: float, mpos: tuple):
+        if self.zoom_scale > self.zoom_step:
+            bb = pg.Vector2(self.rect.size) / self.tile_side / self.zoom_scale - \
+                 pg.Vector2(self.rect.size) / self.tile_side / (self.zoom_scale + add_zoom)
+            self.zoom_scale += add_zoom
+            self.scroll[0] -= bb.x / (self.rect.w / (mpos[0] - self.rect.x))
+            self.scroll[1] -= bb.y / (self.rect.h / (mpos[1] - self.rect.y))
+
     def pg_event(self, event):
         keyboard_mods = pg.key.get_mods()
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -276,9 +284,11 @@ class Grid:
                     logger.debug(tile_pos, None)
                     self.field[tile_pos] = None
                 elif event.button == pg.BUTTON_WHEELUP and keyboard_mods & pg.KMOD_LCTRL:
-                    self.zoom_scale = max(self.zoom_step, self.zoom_scale - self.zoom_step)
+                    # self.zoom_scale = max(self.zoom_step, self.zoom_scale - self.zoom_step)
+                    self.add_zoom_at_pos(-self.zoom_step, event.pos)
                 elif event.button == pg.BUTTON_WHEELDOWN and keyboard_mods & pg.KMOD_LCTRL:
-                    self.zoom_scale += self.zoom_step
+                    # self.zoom_scale += self.zoom_step
+                    self.add_zoom_at_pos(self.zoom_step, event.pos)
                 self.update_display()
         elif event.type == pg.MOUSEMOTION:
             if event.buttons[1] and self.rect.collidepoint(event.pos):

@@ -1,11 +1,9 @@
 import logging
-import math
-
 import pygame as pg
-import json
-from collections import Iterable, defaultdict
+
+from libs.ChunkGrid import ChunkGrid
 from libs.PgUI import App
-import os
+from libs.Tileset import TileSet, int_list
 
 pg.init()
 
@@ -13,180 +11,6 @@ WSIZE = (720 * 2, 480 * 2)
 
 logger = logging.getLogger("GridEdit")
 logger.setLevel(logging.DEBUG)
-
-SRC_TILESET = "tileset"
-LOADER_GRID = "grid"
-
-ExceptionImgLoader = lambda _path: Exception(f"Unknown load_type is used  for the image '{_path}'")
-ExceptionSrcLoader = lambda _path, _src_type: Exception(f"In file '{_path}', the source_type is not {_src_type}")
-ExceptionTilesetLoader = lambda _path: Exception(f"For 'TileSet' requires the 'tiles'  parameter st file '{_path}'")
-
-
-def int_list(lst):
-    return [math.floor(e) for e in lst]
-
-
-def load_image(path):
-    return pg.image.load(path)
-
-
-def auto_rotate_image(image: pg.Surface, skip_duplicate=True):
-    res_images = []
-    buffers_raw = []
-    for i in range(4):
-        if i == 0:
-            res_images.append((image, i))
-            buffers_raw.append(image.get_buffer().raw)
-            continue
-        r_image = pg.transform.rotate(image, 90 * i)
-        if skip_duplicate:
-            raw = r_image.get_buffer().raw
-            if raw in buffers_raw:
-                continue
-            buffers_raw.append(raw)
-        res_images.append((r_image, i))
-    return res_images
-
-
-def load_images(dir_path, data):
-    images = []
-    if data.get("load_type", LOADER_GRID) == LOADER_GRID:
-        img = load_image(os.path.join(dir_path, data.get("path")))
-        tsize = data.get("tile_side")
-        grid_width = data.get("grid_width")
-        if tsize and not grid_width:
-            grid_width = img.get_width() // tsize
-        elif not tsize and grid_width:
-            tsize = img.get_width() // grid_width
-        else:
-            raise Exception(f"For load_type 'Grid' requires the 'tile_side' or 'grid_width' parameter"
-                            f" to load the '{data.get('path')}' image.")
-
-        for y in range(0, img.get_height(), tsize):
-            for ix in range(0, grid_width):
-                x = ix * tsize
-                images.append(img.subsurface((x, y, tsize, tsize)))
-    else:
-        raise ExceptionImgLoader(data.get("path"))
-    return images
-
-
-def load_source(filepath, src_type, run_exception=True):
-    with open(os.path.join(filepath, src_type + ".res")) as f:
-        res = json.load(f)
-    if res.get("source_type") != src_type:
-        if run_exception:
-            raise ExceptionSrcLoader(filepath, src_type)
-        return None
-    return res
-
-
-class TileSet:
-    def __init__(self, autorotate_tile=True):
-        self.tiles = []
-        self.path = ""
-        self.autorotate_tile = autorotate_tile
-
-    def load(self, path):
-        self.path = path
-        json_data = load_source(self.path, SRC_TILESET)
-        self._load_data(json_data)
-
-    def _load_data(self, json_data):
-        tiles_data = json_data.get("tiles")
-        if tiles_data:
-            self.groups = json_data.get("groups", [])
-            self.lst_tilekeys_of_groups = sum([e["tiles"] for e in self.groups], [])
-            self.processing = json_data.get("processing")
-            tiles = _tiles = load_images(self.path, tiles_data)
-            _properties = json_data.get("properties")
-            keys = _keys = [e[0] if isinstance(e, list) else e for e in _properties]
-            self.properties = {key: v for key, *v in _properties}
-
-            if self.autorotate_tile:
-                keys = []
-                tiles = []
-                rotates = []
-                for img, key in zip(_tiles, _keys):
-                    for r_img, r in auto_rotate_image(img, skip_duplicate=False):
-                        keys.append(key)
-                        tiles.append(r_img)
-                        rotates.append(r)
-            else:
-                rotates = [0] * len(keys)
-            keys_r = list(zip(keys, rotates))
-            if json_data.get("preview"):
-                preview = load_images(self.path, json_data.get("preview"))
-                if self.autorotate_tile:
-                    preview = sum([auto_rotate_image(img) for img in preview], [])
-                else:
-                    preview = [(img, 0) for img in preview]
-            else:
-                preview = tiles
-
-            self.tiles = list(zip(tiles, preview, keys_r))
-            self.tiles_dict = {key_r: i for i, key_r in enumerate(keys_r)}
-        else:
-            raise ExceptionTilesetLoader(self.path)
-
-    def get_tile(self, key):
-        if isinstance(key, str):
-            key = (key, 0)
-        return self.tiles[self.tiles_dict.get(key)]
-
-    def get_tiles(self):
-        return self.tiles
-
-    def get_tile_image(self, key, scale=1):
-        img = self.get_tile(key)[0]
-        if scale == 1:
-            return img
-        return pg.transform.scale(img, pg.Vector2(img.get_size()) * scale)
-
-
-class ChunkGrid:
-    def __init__(self, chunk_size=32, store_tile_locations=False):
-        self.chunks_field = {}
-        self.chunk_size = chunk_size
-        self.store_tile_locations = store_tile_locations
-        self.tile_locations = defaultdict(list)
-
-    def __getitem__(self, item):
-        if isinstance(item, Iterable):
-            item = list(item)
-            if len(item) == 2:
-                return self.chunk(self.xy2chunk_pos(item))[item[1] % self.chunk_size][item[0] % self.chunk_size]
-        logger.error(f"Error Grid.get_item({item})")
-
-    def __setitem__(self, key, value):
-        if isinstance(key, Iterable):
-            item = pos = tuple(key)
-            if self.store_tile_locations:
-                last_tile = self.chunk(self.xy2chunk_pos(item))[item[1] % self.chunk_size][item[0] % self.chunk_size]
-                if last_tile is not None:
-                    self.tile_locations[last_tile].remove(pos)
-                if value is not None:
-                    self.tile_locations[value].append(pos)
-            if len(item) == 2:
-                self.chunk(self.xy2chunk_pos(item))[item[1] % self.chunk_size][item[0] % self.chunk_size] = value
-        logger.error(f"Error Grid.set_item({key}, {value})")
-
-    def chunk(self, chunk_pos, default=True):
-        chunk = self.chunks_field.get(chunk_pos)
-        if chunk:
-            return chunk
-        if default:
-            chunk = self.pass_chunk()
-            self.chunks_field[chunk_pos] = chunk
-            return chunk
-        logger.error(f"Error Grid.chunk({chunk_pos}, default={default})")
-        return None
-
-    def pass_chunk(self):
-        return [[None] * self.chunk_size for _ in range(self.chunk_size)]
-
-    def xy2chunk_pos(self, xy):
-        return xy[0] // self.chunk_size, xy[1] // self.chunk_size
 
 
 class ColorSchema:
@@ -212,6 +36,7 @@ class Grid:
         self.active_tile = None
         self.scroll_step = 1
         self.zoom_step = 0.25
+        self.zoom_min = 0.5
         self.mouse_grab_field = None
 
         self.update_display()
@@ -233,12 +58,12 @@ class Grid:
                          (0, y + line_offset_y), (self.rect.w, y + line_offset_y))
             y += _tile_side
         r = self.zoom_scale * 2.1
-        pos = self.scroll[0] * _tile_side+1, self.scroll[1] * _tile_side+1
+        pos = self.scroll[0] * _tile_side + 1, self.scroll[1] * _tile_side + 1
         pg.draw.circle(surface, "red", pos, radius=r, width=1)
         # scroll_tile = self.scroll[0] // self.tile_side, self.scroll[1] // self.tile_side
         for ix in range(-1, int(self.rect.w // _tile_side) + 1):
             for iy in range(-1, int(self.rect.h // _tile_side) + 1):
-                tile_pos = pg.Vector2(int_list((ix - self.scroll[0] , iy - self.scroll[1])))
+                tile_pos = pg.Vector2(int_list((ix - self.scroll[0], iy - self.scroll[1])))
                 tile = self.field[int_list(tile_pos)]
                 # if ix == 0:
                 #      print((ix, iy), tile_pos, int_list(tile_pos), "s", self.scroll, tile, line_offset_y)
@@ -265,12 +90,20 @@ class Grid:
         return int(nx // _tile_side), int(ny // _tile_side)
 
     def add_zoom_at_pos(self, add_zoom: float, mpos: tuple):
-        if self.zoom_scale > self.zoom_step:
+        if self.zoom_scale > self.zoom_min or add_zoom > 0:
             bb = pg.Vector2(self.rect.size) / self.tile_side / self.zoom_scale - \
                  pg.Vector2(self.rect.size) / self.tile_side / (self.zoom_scale + add_zoom)
             self.zoom_scale += add_zoom
             self.scroll[0] -= bb.x / (self.rect.w / (mpos[0] - self.rect.x))
             self.scroll[1] -= bb.y / (self.rect.h / (mpos[1] - self.rect.y))
+
+    def click_tile(self, pos):
+        tile_key, direction = self.field[pos]
+        on_click_str = self.tileset.properties[tile_key].get("on_click")
+        if on_click_str:
+            switch = lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction))
+            eval(on_click_str, globals(), locals())
+            print(self.field[pos])
 
     def pg_event(self, event):
         keyboard_mods = pg.key.get_mods()
@@ -279,16 +112,22 @@ class Grid:
                 tile_pos = self.mouse_pos2tile(event.pos)
                 if event.button == pg.BUTTON_LEFT:
                     logger.debug(tile_pos, self.active_tile)
-                    self.field[tile_pos] = self.active_tile
+                    if keyboard_mods & pg.KMOD_LCTRL and self.field[tile_pos]:
+                        self.click_tile(tile_pos)
+                    elif keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
+                        self.field[tile_pos] = self.field[tile_pos][0], (self.field[tile_pos][1] + 1) % 4
+                    else:
+                        self.field[tile_pos] = self.active_tile
                 elif event.button == pg.BUTTON_RIGHT:
                     logger.debug(tile_pos, None)
-                    self.field[tile_pos] = None
+                    if keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
+                        self.field[tile_pos] = self.field[tile_pos][0], (self.field[tile_pos][1] - 1) % 4
+                    else:
+                        self.field[tile_pos] = None
                 elif event.button == pg.BUTTON_WHEELUP and keyboard_mods & pg.KMOD_LCTRL:
-                    # self.zoom_scale = max(self.zoom_step, self.zoom_scale - self.zoom_step)
-                    self.add_zoom_at_pos(-self.zoom_step, event.pos)
-                elif event.button == pg.BUTTON_WHEELDOWN and keyboard_mods & pg.KMOD_LCTRL:
-                    # self.zoom_scale += self.zoom_step
                     self.add_zoom_at_pos(self.zoom_step, event.pos)
+                elif event.button == pg.BUTTON_WHEELDOWN and keyboard_mods & pg.KMOD_LCTRL:
+                    self.add_zoom_at_pos(-self.zoom_step, event.pos)
                 self.update_display()
         elif event.type == pg.MOUSEMOTION:
             if event.buttons[1] and self.rect.collidepoint(event.pos):
@@ -447,6 +286,7 @@ class ToolsMenu:
 class GridEditApp(App.App):
     def __init__(self):
         screen = pg.display.set_mode(WSIZE)
+        pg.display.set_caption("GridEdit")
         super(GridEditApp, self).__init__(screen)
         self.tileset = TileSet(autorotate_tile=True)
         self.tileset.load("moduls/logic")

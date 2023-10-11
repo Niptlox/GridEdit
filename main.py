@@ -21,6 +21,7 @@ class ColorSchema:
     toolsmenu_bg_color = "#4B5563"
     toolsmenu_border_color = "#000000"
     toolsmenu_active_cell_color = "#FFFFFF"
+    toolsmenu_vscroll_step = 25
 
 
 class Grid:
@@ -177,6 +178,9 @@ class ToolsMenu:
         self.tile_side = 48
         self.tiles_space_x = 10
         self.tiles_space_y = 10
+        self.scroll_active = True
+        self.scroll = [0, 0]
+        self.max_height = 0
         self.update_display()
         self.tools_rect = []
 
@@ -207,9 +211,14 @@ class ToolsMenu:
         tiles = self.tileset.get_tiles()
         groups = self.tileset.groups
         y = self.tiles_start_pos[1]
+        start_x = self.tiles_start_pos[0]
+        print(self.scroll_active, self.scroll, -self.max_height)
+        if self.scroll_active:
+            start_x += self.scroll[0]
+            y += self.scroll[1]
         i = 0
         for group in groups:
-            x = self.tiles_start_pos[0]
+            x = start_x
             name, tile_keys = group["title"], group["tiles"]
             # for i in range(len(tiles)):
             text = self.color_schema.tools_menu_font_1.render(name, True, self.color_schema.tools_menu_font_1_color)
@@ -229,6 +238,12 @@ class ToolsMenu:
                     x += self.tile_side + self.tiles_space_x
                 y += self.tile_side + self.tiles_space_y
                 i += 1
+        if y + 10 > self.rect.h + self.scroll[1]:
+            self.max_height = y
+            self.scroll_active = True
+        else:
+            self.scroll_active = False
+            self.scroll = [0, 0]
         return surface
 
     def set_active_tool(self, tool):
@@ -242,14 +257,6 @@ class ToolsMenu:
         for tool in self.tools_rect:
             if tool[0].collidepoint((mx, my)):
                 return tool[1]
-        # x, y = self.tiles_start_pos
-        # for i in range(len(self.tileset.tiles)):
-        #     if x <= mx <= (x + self.tile_side) and y <= my <= (y + self.tile_side):
-        #         return i
-        #     if self.vertical:
-        #         y += self.tile_side + self.tiles_space_y
-        #     else:
-        #         x += self.tile_side + self.tiles_space_y
         return None
 
     def pg_event(self, event):
@@ -275,6 +282,15 @@ class ToolsMenu:
                         self.tileset.lst_tilekeys_of_groups)
                     self.active_cell = self.tileset.lst_tilekeys_of_groups[num], self.active_cell[1]
                 self.set_active_tool(self.active_cell)
+            if self.scroll_active and self.rect.collidepoint(event.pos):
+                if event.button == pg.BUTTON_WHEELUP:
+                    self.scroll[1] = min(self.scroll[1]+self.color_schema.toolsmenu_vscroll_step, 0)
+                    self.update_display()
+                elif event.button == pg.BUTTON_WHEELDOWN:
+                    self.scroll[1] = max(self.scroll[1]-self.color_schema.toolsmenu_vscroll_step, -self.max_height)
+                    self.update_display()
+
+
 
     def update_display(self):
         self.display = self.get_current_surface()

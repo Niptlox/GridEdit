@@ -4,10 +4,9 @@ import os
 import pygame as pg
 import json
 
-
-
 SRC_TILESET = "tileset"
 LOADER_GRID = "grid"
+TOP, RIGHT, BOTTOM, LEFT = 0, 1, 2, 3
 
 ExceptionImgLoader = lambda _path: Exception(f"Unknown load_type is used  for the image '{_path}'")
 ExceptionSrcLoader = lambda _path, _src_type: Exception(f"In file '{_path}', the source_type is not {_src_type}")

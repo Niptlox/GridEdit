@@ -4,13 +4,14 @@ import pygame as pg
 from libs.ChunkGrid import ChunkGrid
 from libs.PgUI import App
 from libs.Tileset import TileSet, int_list
+from moduls.logic import processing
 
 pg.init()
 
 WSIZE = (720 * 2, 480 * 2)
 
 logger = logging.getLogger("GridEdit")
-logger.setLevel(logging.DEBUG)
+# logger.setLevel()
 
 
 class ColorSchema:
@@ -32,7 +33,7 @@ class Grid:
         self.color_schema = color_schema
         self.scroll = [0, 0]
         self.zoom_scale = 4
-        self.field = ChunkGrid()
+        self.field = ChunkGrid(store_tile_locations=True)
         self.tileset: TileSet = tileset
         self.active_tile = None
         self.scroll_step = 1
@@ -150,9 +151,16 @@ class Grid:
                     self.scroll[0] += self.scroll_step
                 elif event.key == pg.K_RIGHT:
                     self.scroll[0] -= self.scroll_step
-
+        if event.type == pg.KEYDOWN:
+            if event.key == pg.K_SPACE:
+                self.run()
             logger.debug(self.zoom_scale, event.mod, event.key, pg.KMOD_LCTRL)
             self.update_display()
+
+    def run(self):
+        logger.error("Start processing...")
+        processing.main(self.field, self.tileset)
+        logger.error("Fin processing")
 
     def update_display(self):
         self.display = self.get_current_surface()
@@ -260,7 +268,6 @@ class ToolsMenu:
         return None
 
     def pg_event(self, event):
-
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == pg.BUTTON_LEFT:
                 if self.rect.collidepoint(event.pos):

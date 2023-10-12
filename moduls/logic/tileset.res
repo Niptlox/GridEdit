@@ -25,7 +25,7 @@
       {
         "input": [ 0, 2 ],
         "output": [ 0, 2 ],
-        "processing": "lambda x02: [any(x02)*2"
+        "processing": "lambda x02: [any(x02)]*2"
       }
     ],
     [
@@ -160,6 +160,6 @@
     "path": "processing.py",
     "type": "py",
     "run": "main",
-    "start_tiles": ["input_on"]
+    "start_tiles": ["input_on", "input_off"]
   }
 }

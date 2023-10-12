@@ -27,17 +27,18 @@ class ChunkGrid:
         logger.error(f"Error Grid.get_item({item})")
 
     def __setitem__(self, key, value):
+        print("__set", key, value)
         if isinstance(key, Iterable):
             item = pos = tuple(key)
             if self.store_tile_locations:
-                last_tile = self[
-                    pos]  # .chunk(self.xy2chunk_pos(item))[item[1] % self.chunk_size][item[0] % self.chunk_size]
+                last_tile = self[pos]
                 if last_tile is not None:
                     self.tile_locations[last_tile].remove(pos)
                 if value is not None:
                     self.tile_locations[value].append(pos)
             if len(item) == 2:
                 self.chunk(self.xy2chunk_pos(item))[item[1] % self.chunk_size][item[0] % self.chunk_size] = value
+                return
         logger.error(f"Error Grid.set_item({key}, {value})")
 
     def chunk(self, chunk_pos, default=True):

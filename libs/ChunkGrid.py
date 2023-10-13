@@ -1,3 +1,4 @@
+import pickle
 import logging
 from collections.abc import Iterable
 from collections import defaultdict
@@ -12,12 +13,13 @@ def set_logger(_logger):
 
 
 class ChunkGrid:
-    def __init__(self, chunk_size=32, store_tile_locations=False, default_item=lambda: None):
-        self.chunks_field = {}
+    def __init__(self, chunk_size=32, store_tile_locations=False, default_item=lambda: None, title="ChunkGrid"):
         self.chunk_size = chunk_size
+        self.chunks_field = {}
         self.store_tile_locations = store_tile_locations
         self.tile_locations = defaultdict(list)
         self.default_item = default_item
+        self.title = title
 
     def __getitem__(self, item):
         if isinstance(item, Iterable):
@@ -27,7 +29,7 @@ class ChunkGrid:
         logger.error(f"Error Grid.get_item({item})")
 
     def __setitem__(self, key, value):
-        print("__set", key, value)
+        print(f"__set({self.title})__", key, value)
         if isinstance(key, Iterable):
             item = pos = tuple(key)
             if self.store_tile_locations:
@@ -58,8 +60,29 @@ class ChunkGrid:
         obj.tile_locations = type(self.tile_locations)(self.tile_locations)
         return obj
 
+
     def pass_chunk(self):
-        return [[self.default_item()] * self.chunk_size for _ in range(self.chunk_size)]
+        return [[self.default_item() for _ in range(self.chunk_size)]  for _ in range(self.chunk_size)]
 
     def xy2chunk_pos(self, xy):
         return xy[0] // self.chunk_size, xy[1] // self.chunk_size
+
+    def clear(self):
+        self.chunks_field = {}
+        self.tile_locations = defaultdict(list)
+
+    def load_file(self, f):
+        for key, val in load(f).items():
+            self.__dict__[key] = val
+
+    def save(self, f):
+        d = dict(self.__dict__)
+        d.pop("default_item")
+        pickle.dump(d, file=f)
+
+def save(obj, f):
+    pickle.dump(obj, file=f)
+
+
+def load(f):
+    return pickle.load(f)

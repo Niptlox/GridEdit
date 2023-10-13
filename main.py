@@ -1,16 +1,18 @@
 import logging
 import pygame as pg
 
-from libs.ChunkGrid import ChunkGrid
+from libs.ChunkGrid import ChunkGrid, save, load
 from libs.PgUI import App
 from libs.Tileset import TileSet, int_list
 from moduls.logic import processing
 
 pg.init()
-
+FILENAME = "fullsumxor.lg"
 WSIZE = (720 * 2, 480 * 2)
 
 logger = logging.getLogger("GridEdit")
+
+
 # logger.setLevel()
 
 
@@ -23,6 +25,7 @@ class ColorSchema:
     toolsmenu_border_color = "#000000"
     toolsmenu_active_cell_color = "#FFFFFF"
     toolsmenu_vscroll_step = 25
+    highlighting_color = "#2e70ff"
 
 
 class Grid:
@@ -40,7 +43,8 @@ class Grid:
         self.zoom_step = 0.25
         self.zoom_min = 0.5
         self.mouse_grab_field = None
-
+        self.highlighting = None
+        self.copy_buffer = []
         self.update_display()
 
     def get_current_surface(self):
@@ -74,6 +78,12 @@ class Grid:
                     # pos = ix * _tile_side + line_offset_x, iy * _tile_side + line_offset_y
                     pos = (pg.Vector2(self.scroll) + tile_pos) * _tile_side
                     surface.blit(img, pos)
+        if self.highlighting:
+            hl_p1 = (pg.Vector2(self.scroll) + self.highlighting[0]) * _tile_side
+            hl_p2 = (pg.Vector2(self.scroll) + self.highlighting[1]) * _tile_side
+            minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), \
+                max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
+            pg.draw.rect(surface, self.color_schema.highlighting_color, (minx, miny, maxx - minx, maxy - miny), 2)
 
         return surface
 
@@ -114,7 +124,10 @@ class Grid:
                 tile_pos = self.mouse_pos2tile(event.pos)
                 if event.button == pg.BUTTON_LEFT:
                     logger.debug(tile_pos, self.active_tile)
-                    if keyboard_mods & pg.KMOD_LCTRL and self.field[tile_pos]:
+                    self.highlighting = None
+                    if keyboard_mods & pg.KMOD_LSHIFT:
+                        self.highlighting = [tile_pos, (tile_pos[0] + 1, tile_pos[1] + 1)]
+                    elif keyboard_mods & pg.KMOD_LCTRL and self.field[tile_pos]:
                         self.click_tile(tile_pos)
                     elif keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
                         self.field[tile_pos] = self.field[tile_pos][0], (self.field[tile_pos][1] + 1) % 4
@@ -132,18 +145,32 @@ class Grid:
                     self.add_zoom_at_pos(-self.zoom_step, event.pos)
                 self.update_display()
         elif event.type == pg.MOUSEMOTION:
+            if self.highlighting and event.buttons[0]:
+                tile_pos = self.mouse_pos2tile(event.pos)
+                self.highlighting[1] = (tile_pos[0] + 1, tile_pos[1] + 1)
+                self.update_display()
             if event.buttons[1] and self.rect.collidepoint(event.pos):
                 self.scroll[0] += event.rel[0] / (self.tile_side * self.zoom_scale)
                 self.scroll[1] += event.rel[1] / (self.tile_side * self.zoom_scale)
                 self.update_display()
         if event.type == pg.KEYDOWN:
             if keyboard_mods & pg.KMOD_LCTRL:
-                if event.key == pg.K_UP:
+                if event.key == pg.K_c:
+                    self.copy_highlight()
+                elif event.key == pg.K_x:
+                    self.copy_highlight(dell=True)
+                elif event.key == pg.K_v:
+                    tile_pos = self.mouse_pos2tile(pg.mouse.get_pos())
+                    self.paste(tile_pos, self.copy_buffer)
+                elif event.key == pg.K_UP:
                     self.zoom_scale += self.zoom_step
                 elif event.key == pg.K_DOWN:
                     self.zoom_scale = max(self.zoom_step, self.zoom_scale - self.zoom_step)
             else:
-                if event.key == pg.K_UP:
+                if event.key == pg.K_ESCAPE:
+                    self.highlighting = None
+                    self.update_display()
+                elif event.key == pg.K_UP:
                     self.scroll[1] += self.scroll_step
                 elif event.key == pg.K_DOWN:
                     self.scroll[1] -= self.scroll_step
@@ -154,7 +181,17 @@ class Grid:
         if event.type == pg.KEYDOWN:
             if event.key == pg.K_SPACE:
                 self.run()
-            logger.debug(self.zoom_scale, event.mod, event.key, pg.KMOD_LCTRL)
+            if (event.key == pg.K_d and event.mod & pg.KMOD_LCTRL) or event.key == pg.K_DELETE:
+                self.clear()
+            if event.key == pg.K_s and event.mod & pg.KMOD_LCTRL:
+                with open(FILENAME, "wb") as f:
+                    self.field.save(f)
+            if event.key == pg.K_o and event.mod & pg.KMOD_LCTRL:
+                try:
+                    with open(FILENAME, "rb") as f:
+                        self.field.load_file(f)
+                except Exception as exc:
+                    logger.error(f"Error load file: {exc}")
             self.update_display()
 
     def run(self):
@@ -166,10 +203,36 @@ class Grid:
         self.display = self.get_current_surface()
 
     def draw(self, surface):
-
         surface.blit(self.display, self.rect)
         if self.rect.collidepoint(pg.mouse.get_pos()) and self.active_tile:
             surface.blit(self.tileset.get_tile_image(self.active_tile, scale=2), pg.mouse.get_pos())
+
+    def clear(self):
+        if self.highlighting:
+            hl_p1, hl_p2 = self.highlighting
+            for y in range(min(hl_p1[1], hl_p2[1]), max(hl_p1[1], hl_p2[1])):
+                for x in range(min(hl_p1[0], hl_p2[0]), max(hl_p1[0], hl_p2[0])):
+                    self.field[(x, y)] = None
+        else:
+            self.field.clear()
+
+    def copy_highlight(self, dell=False):
+        hl_p1, hl_p2 = self.highlighting
+        minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), max(hl_p1[0], hl_p2[0]), max(
+            hl_p1[1], hl_p2[1])
+        self.copy_buffer = []
+        for y in range(miny, maxy):
+            self.copy_buffer.append([])
+            for x in range(minx, maxx):
+                self.copy_buffer[-1].append(self.field[(x, y)])
+                if dell:
+                    self.field[(x, y)] = None
+
+    def paste(self, pos, buffer):
+        for iy in range(len(buffer)):
+            for ix in range(len(buffer[0])):
+                npos = pos[0] + ix, pos[1] + iy
+                self.field[npos] = buffer[iy][ix]
 
 
 class ToolsMenu:
@@ -291,13 +354,11 @@ class ToolsMenu:
                 self.set_active_tool(self.active_cell)
             if self.scroll_active and self.rect.collidepoint(event.pos):
                 if event.button == pg.BUTTON_WHEELUP:
-                    self.scroll[1] = min(self.scroll[1]+self.color_schema.toolsmenu_vscroll_step, 0)
+                    self.scroll[1] = min(self.scroll[1] + self.color_schema.toolsmenu_vscroll_step, 0)
                     self.update_display()
                 elif event.button == pg.BUTTON_WHEELDOWN:
-                    self.scroll[1] = max(self.scroll[1]-self.color_schema.toolsmenu_vscroll_step, -self.max_height)
+                    self.scroll[1] = max(self.scroll[1] - self.color_schema.toolsmenu_vscroll_step, -self.max_height)
                     self.update_display()
-
-
 
     def update_display(self):
         self.display = self.get_current_surface()

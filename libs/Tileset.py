@@ -29,7 +29,7 @@ def auto_rotate_image(image: pg.Surface, skip_duplicate=True):
             res_images.append((image, i))
             buffers_raw.append(image.get_buffer().raw)
             continue
-        r_image = pg.transform.rotate(image, 90 * i)
+        r_image = pg.transform.rotate(image, -90 * i)
         if skip_duplicate:
             raw = r_image.get_buffer().raw
             if raw in buffers_raw:

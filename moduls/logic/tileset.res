@@ -12,6 +12,7 @@
 
   },
   "properties": [
+
     [
       "path_+",
       {
@@ -29,6 +30,23 @@
       }
     ],
     [
+      "bridge_+",
+      {
+        "input": [ 0, 1, 2, 3 ],
+        "output": [ 0, 1, 2, 3 ],
+        "processing": "lambda x0123: [x0123[0] or x0123[2], x0123[1] or x0123[3], x0123[0] or x0123[2], x0123[1] or x0123[3]]",
+        "paths": {"0": [2], "2": [0], "1": [3], "3": [1]}
+      }
+    ],
+    [
+      "path_L",
+      {
+        "input": [ 0, 1],
+        "output": [ 0, 1],
+        "processing": "lambda x0123: [any(x0123)] * 2"
+      }
+    ],
+    [
       "diod",
       {
         "input": [ 2 ],
@@ -39,18 +57,18 @@
     [
       "lamp_on",
       {
-        "input": [ 0, 1, 2, 3 ],
-        "output": [ 0, 1, 2, 3 ],
-        "processing": "lambda x0123: (switch('lamp_on') if any(x0123) else switch('lamp_off')) and x0123"
+        "input": [ 0],
+        "output": [ 0],
+        "processing": "lambda x0123: (switch('lamp_on') if x0123 else switch('lamp_off'))"
       }
     ],
 
     [
       "lamp_off",
       {
-        "input": [ 0, 1, 2, 3 ],
-        "output": [ 0, 1, 2, 3 ],
-        "processing": "lambda x0123: (switch('lamp_on') if any(x0123) else switch('lamp_off')) and x0123"
+        "input": [ 0],
+        "output": [ 0],
+        "processing": "lambda x0123: (switch('lamp_on') if x0123 else switch('lamp_off'))"
       }
     ],
     [
@@ -139,7 +157,7 @@
   "groups": [
     {
       "title": "Paths",
-      "tiles": [ "path_+", "path_I" ]
+      "tiles": [ "path_+", "path_I", "bridge_+", "path_L"]
     },
     {
       "title": "Inputs",

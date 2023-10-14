@@ -83,6 +83,44 @@ class LogicProcessing:
         return res
 
 
+class CompilLogic:
+    def __init__(self, field, tileset):
+        self.field = field
+        self.tileset = tileset
+        self.scheme = {}
+        self.inputs = {}
+        self.lamps = {}
+
+
+    def find_path(self, pos):
+        x, y = pos
+        tile = self.field[pos]
+        tile_key, direction = tile
+        around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
+        prop = self.tileset.properties[tile_key]
+
+
+    def run_lamp(self, pos):
+        x, y = pos
+        tile = self.field[pos]
+        key, direction = tile
+        around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
+        get_pos = around_poss[direction]
+        self.lamps[pos] = self.find_path(get_pos)
+
+    def run(self):
+        poss = get_poss_of_tile(self.field, "lamp_on") + get_poss_of_tile(self.field, "lamp_off")
+        for pos in poss:
+            self._run(pos)
+
+
+def get_poss_of_tile(field, tile_key):
+    res = []
+    for rot in 0, 1, 2, 3:
+        tile = tile_key, rot
+        for pos in field.tile_locations.get(tile, []):
+            res.append(pos)
+    return res
 
 
 def main(tile_grid: ChunkGrid, tileset):

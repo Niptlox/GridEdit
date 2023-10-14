@@ -8,7 +8,7 @@ from moduls.logic import processing
 
 pg.init()
 FILENAME = "fullsumxor.lg"
-WSIZE = (720 * 2, 480 * 2)
+WSIZE = (720 + 400, 480 + 200)
 
 logger = logging.getLogger("GridEdit")
 
@@ -82,7 +82,7 @@ class Grid:
             hl_p1 = (pg.Vector2(self.scroll) + self.highlighting[0]) * _tile_side
             hl_p2 = (pg.Vector2(self.scroll) + self.highlighting[1]) * _tile_side
             minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), \
-                max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
+                                     max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
             pg.draw.rect(surface, self.color_schema.highlighting_color, (minx, miny, maxx - minx, maxy - miny), 2)
 
         return surface
@@ -357,7 +357,10 @@ class ToolsMenu:
                     self.scroll[1] = min(self.scroll[1] + self.color_schema.toolsmenu_vscroll_step, 0)
                     self.update_display()
                 elif event.button == pg.BUTTON_WHEELDOWN:
-                    self.scroll[1] = max(self.scroll[1] - self.color_schema.toolsmenu_vscroll_step, -self.max_height)
+                    if self.color_schema.toolsmenu_vscroll_step > -self.max_height * 2 + self.rect.h:
+                        self.scroll[1] -= self.color_schema.toolsmenu_vscroll_step
+
+                    print(self.scroll, self.max_height, self.rect.h, -self.max_height + self.rect.h)
                     self.update_display()
 
     def update_display(self):

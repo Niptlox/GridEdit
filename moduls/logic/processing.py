@@ -17,7 +17,7 @@ class LogicProcessing:
         for pos in self.get_poss_of_tile("lamp_on"):
             self.field[pos] = ("lamp_off", self.field[pos][1])
 
-    def run_tile(self, pos, recursion_run=False, direction=None, runed=None):
+    def run_tile(self, pos, recursion_run=False, run_direction=None, runed=None):
         if runed is None:
             runed = set()
         self.runed.add(pos)
@@ -25,7 +25,9 @@ class LogicProcessing:
         tile_key, direction = self.field[pos]
         print("{", tile_key)
         prop = self.tileset.properties[tile_key]
-
+        if "paths" in prop:
+            # откуда пришел сигнал
+            p_run_direction = str((run_direction - direction + 2) % 4)
         switch = lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction))
         x, y = pos
         _around_tiles = [self.run_field[(x, y - 1)][BOTTOM], self.run_field[(x + 1, y)][LEFT],
@@ -45,14 +47,14 @@ class LogicProcessing:
 
         around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
         out_pos = []
+
         for out, i in zip(output_t, prop["output"]):
             i_d = (i + direction) % 4
+            if "paths" in prop:
+                if i not in prop["paths"][p_run_direction]:
+                    continue
             out_pos.append((around_poss[i_d], i_d))
             self.run_field[pos][i_d] = out
-        # if "paths" in prop:
-        #     for out, i in zip(output_t, prop["paths"]):
-        #         i_d = (i + direction) % 4
-        #         out_pos.append((around_poss[i_d], i_d))
 
         print("run tile", pos, tile_key, direction, _around_tiles, around_tiles, input_t, output_t, prop["output"],
               self.runed)
@@ -65,7 +67,7 @@ class LogicProcessing:
                     t_output = self.tileset.properties[a_tile[0]]["input"]
                     print("rec", a_tile, a_pos, i_d, ((i_d + 2 - a_tile[1]) % 4), t_output)
                     if ((i_d + 2 - a_tile[1]) % 4) in t_output:
-                        self.run_tile(a_pos, recursion_run=True, runed=set(runed))
+                        self.run_tile(a_pos, recursion_run=True, runed=set(runed), run_direction=i_d)
         print("}")
 
     def clear_run(self):
@@ -129,10 +131,10 @@ def main(tile_grid: ChunkGrid, tileset):
     proc.set_all_lamp_off()
     for tile_key in start_tiles:
         for pos in proc.get_poss_of_tile(tile_key):
-            print(pos)
-            try:
+            # print(pos)
+            # try:
                 proc.run_tile(pos, recursion_run=True)
-            except:
-                input("Error!!!:")
-                break
+            # except Exception as exc:
+            #     input(f"Error({exc})!!!:")
+            #     break
     print(proc.run_field.tile_locations)

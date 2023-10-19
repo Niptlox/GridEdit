@@ -18,7 +18,8 @@
       {
         "input": [ 0, 1, 2, 3 ],
         "output": [ 0, 1, 2, 3 ],
-        "path": true
+        "processing": "lambda x0123: [any(x0123)] * 4",
+        "pash": true
       }
     ],
     [
@@ -26,7 +27,8 @@
       {
         "input": [ 0, 2 ],
         "output": [ 0, 2 ],
-        "path": true
+        "processing": "lambda x02: [any(x02)]*2",
+        "pash": true
       }
     ],
     [
@@ -34,8 +36,9 @@
       {
         "input": [ 0, 1, 2, 3 ],
         "output": [ 0, 1, 2, 3 ],
-        "path": true,
-        "paths": {"0": [2], "2": [0], "1": [3], "3": [1]}
+        "processing": "lambda x0123: [x0123[0] or x0123[2], x0123[1] or x0123[3], x0123[0] or x0123[2], x0123[1] or x0123[3]]",
+        "paths": {"0": [2], "2": [0], "1": [3], "3": [1]},
+        "pash": true
       }
     ],
     [
@@ -43,7 +46,8 @@
       {
         "input": [ 0, 1],
         "output": [ 0, 1],
-        "path": true
+        "processing": "lambda x0123: [any(x0123)] * 2",
+        "pash": true
       }
     ],
     [
@@ -51,14 +55,14 @@
       {
         "input": [ 2 ],
         "output": [ 0 ],
-        "processing": "lambda x2: x2"
+        "processing": "lambda x2: x2",
       }
     ],
     [
       "lamp_on",
       {
         "input": [ 0],
-        "output": [ 0],
+        "output": [ ],
         "processing": "lambda x0123: (switch('lamp_on') if x0123 else switch('lamp_off'))"
       }
     ],
@@ -67,7 +71,7 @@
       "lamp_off",
       {
         "input": [ 0],
-        "output": [ 0],
+        "output": [ ],
         "processing": "lambda x0123: (switch('lamp_on') if x0123 else switch('lamp_off'))"
       }
     ],
@@ -170,7 +174,7 @@
     },
     {
       "title": "Operands",
-      "tiles": [ "not", "xor", "and_2_u", "and_2_r", "and_3_u", "or_2_u", "or_2_r", "or_3_u" ]
+      "tiles": ["diod", "not", "xor", "and_2_u", "and_2_r", "and_3_u", "or_2_u", "or_2_r", "or_3_u" ]
     }
 
   ],

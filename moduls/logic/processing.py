@@ -7,8 +7,9 @@ class LogicProcessing:
         self.field = field
         self.tileset = tileset
         self.runed_pos = set()
-        self.function_of_tiles = {eval(self.tileset.properties[tile_key[0]].get("processing", "lambda: None"), globals(), locals())
-                                  for tile_key in self.tileset.tiles_dict}
+        self.function_of_tiles = {
+            eval(self.tileset.properties[tile_key[0]].get("processing", "lambda: None"), globals(), locals())
+            for tile_key in self.tileset.tiles_dict}
         self.run_field = ChunkGrid(6, default_item=lambda: [0] * 4, store_tile_locations=True,
                                    title="run_field")
         self.runed = set()
@@ -38,7 +39,8 @@ class LogicProcessing:
                         new_pos = a_pos
                     else:
                         _set_signal = self.field[pos][a_dir] if set_signal is None else set_signal
-                        n_res = self.find_path_connections(a_pos, path_poss, run_direction=a_dir, set_signal=_set_signal)
+                        n_res = self.find_path_connections(a_pos, path_poss, run_direction=a_dir,
+                                                           set_signal=_set_signal)
                         res.update(n_res)
                 else:
                     res[a_pos] = a_tile
@@ -151,9 +153,10 @@ class CompilLogic:
     def __init__(self, field, tileset):
         self.field = field
         self.tileset = tileset
-        self.scheme = {}
-        self.inputs = {}
-        self.lamps = {}
+        self.runed = {}
+        self.path2group = {}
+        self.path_groups_inout = {}
+        self.path_groups_value = {}
 
     def find_path(self, pos):
         x, y = pos
@@ -170,10 +173,74 @@ class CompilLogic:
         get_pos = around_poss[direction]
         self.lamps[pos] = self.find_path(get_pos)
 
+    def create_path_group(self, pos, ):
+        pass
+
+    def get_path_group(self, pos, direction):
+        if pos not in self.path2group:
+            self.create_path_group(pos)
+        return self.path2group[pos][direction]
+
+    def get_path_value(self, pos, direction):
+        group_id = self.get_path_group(pos, direction)
+        if group_id not in self.path_groups_value:
+            self.path_groups_value[group_id] = sum(map(bool, self.path_groups_inout[group_id][0]))
+        return self.path_groups_value[group_id]
+
+    def run_tile(self, pos, last_pos=None):
+        x, y = pos
+        tile = self.field[pos]
+        print("{run", tile, pos, )
+        if tile is None:
+            return [False] * 4
+        elif pos in self.runed:
+            return self.runed[pos]
+        tile_key, direction = tile
+        prop = self.tileset.properties[tile_key]
+        around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
+        # Get inputs value
+        inputs_v = []
+        if prop.get("path"):
+            output_t = (self.get_path_value(pos, (i + direction) % 4) for i in prop["output"])
+        else:
+            for input_d in prop["input"]:
+                i_dd = (input_d + direction) % 4
+                i_dd2 = (i_dd + 2) % 4
+                input_pos = around_poss[i_dd]
+                input_tile = self.field[input_pos]
+                if input_tile is None or input_pos == last_pos:
+                    val = False
+                else:
+                    input_prop = self.tileset.properties[input_tile[0]]
+                    # print(i_dd, input_tile, "prop", (i_dd2 - input_tile[1]) % 4, input_prop["output"])
+                    if (i_dd2 - input_tile[1]) % 4 in input_prop["output"]:
+                        val = self.run_tile(input_pos, pos)[i_dd2]
+                    else:
+                        val = False
+                # print("i_dd", i_dd, input_pos, input_tile, "val", val)
+                inputs_v.append(val)
+            if len(inputs_v) == 1:
+                inputs_v = inputs_v[0]
+
+            # Run function
+            switch = lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction))
+            _output_v = eval(prop["processing"], locals())(inputs_v)
+            output_t = [False] * 4
+            if prop["output"]:
+                if not isinstance(_output_v, (list, tuple)):
+                    output_t[(prop["output"][0] + direction) % 4] = _output_v
+                else:
+                    for out_d, out_v in zip(prop["output"], _output_v):
+                        output_t[(out_d + direction) % 4] = out_v
+        print("res", tile, pos, inputs_v, output_t, "}")
+        self.runed[pos] = output_t
+        return output_t
+
     def run(self):
         poss = get_poss_of_tile(self.field, "lamp_on") + get_poss_of_tile(self.field, "lamp_off")
         for pos in poss:
-            self._run(pos)
+            print("=====================")
+            self.run_tile(pos)
 
 
 def get_poss_of_tile(field, tile_key):
@@ -185,7 +252,7 @@ def get_poss_of_tile(field, tile_key):
     return res
 
 
-def main(tile_grid: ChunkGrid, tileset):
+def _main(tile_grid: ChunkGrid, tileset):
     start_tiles = tileset.processing.get("start_tiles")
     proc = LogicProcessing(tile_grid, tileset)
     proc.set_all_lamp_off()
@@ -198,3 +265,13 @@ def main(tile_grid: ChunkGrid, tileset):
         #     input(f"Error({exc})!!!:")
         #     break
     print(proc.run_field.tile_locations)
+
+
+def main(tile_grid: ChunkGrid, tileset):
+    comp = CompilLogic(tile_grid, tileset)
+    comp.run()
+    # try:
+    #     comp.run()
+    # except Exception as exc:
+    #     print("Error!!!", exc)
+    print("FIN")

@@ -8,7 +8,7 @@ from moduls.logic import processing
 
 pg.init()
 FILENAME = "fullsum.lg"
-WSIZE = (720*2 + 400, 480*2 + 200)
+WSIZE = (720 * 2 + 400, 480 * 2 + 200)
 
 logger = logging.getLogger("GridEdit")
 
@@ -47,6 +47,7 @@ class Grid:
         self.copy_buffer = []
         self.update_display()
         self.history = []
+        self.history_iter = -1 # last index( -1, -2, -3...)
 
     def get_current_surface(self):
         surface = pg.Surface(self.rect.size)
@@ -83,7 +84,7 @@ class Grid:
             hl_p1 = (pg.Vector2(self.scroll) + self.highlighting[0]) * _tile_side
             hl_p2 = (pg.Vector2(self.scroll) + self.highlighting[1]) * _tile_side
             minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), \
-                                     max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
+                max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
             pg.draw.rect(surface, self.color_schema.highlighting_color, (minx, miny, maxx - minx, maxy - miny), 2)
 
         return surface
@@ -118,6 +119,11 @@ class Grid:
             eval(on_click_str, globals(), locals())
             print(self.field[pos])
 
+    def set_tile(self, pos, tile, save_history=True):
+        if save_history:
+            self.add_action_history({"type": "replace", "pos": pos, "old": self.field[pos], "new": tile})
+        self.field[pos] = tile
+
     def pg_event(self, event):
         keyboard_mods = pg.key.get_mods()
         if event.type == pg.MOUSEBUTTONDOWN:
@@ -131,15 +137,15 @@ class Grid:
                     elif keyboard_mods & pg.KMOD_LCTRL and self.field[tile_pos]:
                         self.click_tile(tile_pos)
                     elif keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
-                        self.field[tile_pos] = self.field[tile_pos][0], (self.field[tile_pos][1] + 1) % 4
+                        self.set_tile(tile_pos, (self.field[tile_pos][0], (self.field[tile_pos][1] + 1) % 4))
                     else:
-                        self.field[tile_pos] = self.active_tile
+                        self.set_tile(tile_pos, self.active_tile)
                 elif event.button == pg.BUTTON_RIGHT:
                     logger.debug(tile_pos, None)
                     if keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
-                        self.field[tile_pos] = self.field[tile_pos][0], (self.field[tile_pos][1] - 1) % 4
+                        self.set_tile(tile_pos, (self.field[tile_pos][0], (self.field[tile_pos][1] - 1) % 4))
                     else:
-                        self.field[tile_pos] = None
+                        self.set_tile(tile_pos, None)
                 elif event.button == pg.BUTTON_WHEELUP and keyboard_mods & pg.KMOD_LCTRL:
                     self.add_zoom_at_pos(self.zoom_step, event.pos)
                 elif event.button == pg.BUTTON_WHEELDOWN and keyboard_mods & pg.KMOD_LCTRL:
@@ -163,6 +169,10 @@ class Grid:
                 elif event.key == pg.K_v:
                     tile_pos = self.mouse_pos2tile(pg.mouse.get_pos())
                     self.paste(tile_pos, self.copy_buffer)
+                elif event.key == pg.K_z and keyboard_mods & pg.KMOD_LSHIFT:
+                    self.redo()
+                elif event.key == pg.K_z:
+                    self.undo()
                 elif event.key == pg.K_UP:
                     self.zoom_scale += self.zoom_step
                 elif event.key == pg.K_DOWN:
@@ -229,11 +239,45 @@ class Grid:
                 if dell:
                     self.field[(x, y)] = None
 
-    def paste(self, pos, buffer):
+    def paste(self, pos, buffer, save_history=True):
+        last = []
         for iy in range(len(buffer)):
+            last.append([])
             for ix in range(len(buffer[0])):
                 npos = pos[0] + ix, pos[1] + iy
-                self.field[npos] = buffer[iy][ix]
+                last[-1].append(self.field[npos])
+                self.set_tile(npos, buffer[iy][ix], save_history=False)
+        if save_history:
+            self.add_action_history({"type": "replace_group", "pos": pos, "old": last, "new": list(buffer)})
+
+    def add_action_history(self, action):
+        if self.history_iter < -1:
+            del self.history[self.history_iter+1:]
+            self.history_iter = -1
+        self.history.append(action)
+        print("action", action)
+
+    def undo(self):
+        print("u", self.history_iter)
+        if not self.history or self.history_iter < -len(self.history):
+            return
+        action = self.history[self.history_iter]
+        self.history_iter -= 1
+        if action["type"] == "replace":
+            self.set_tile(action["pos"], action["old"], save_history=False)
+        elif action["type"] == "replace_group":
+            self.paste(action["pos"], action["old"], save_history=False)
+
+    def redo(self):
+        print("r", self.history_iter)
+        if not self.history or self.history_iter == -1:
+            return
+        self.history_iter += 1
+        action = self.history[self.history_iter]
+        if action["type"] == "replace":
+            self.set_tile(action["pos"], action["new"], save_history=False)
+        elif action["type"] == "replace_group":
+            self.paste(action["pos"], action["new"], save_history=False)
 
 
 class ToolsMenu:

@@ -323,9 +323,11 @@ def _main(tile_grid: ChunkGrid, tileset):
 
 def main(tile_grid: ChunkGrid, tileset):
     comp = CompilLogic(tile_grid, tileset)
-    comp.run()
-    # try:
-    #     comp.run()
-    # except Exception as exc:
-    #     print("Error!!!", exc)
+    # comp.run()
+    try:
+        comp.run()
+    except RecursionError as excRec:
+        print("ErrorRecursion!!!", excRec)
+    except Exception as exc:
+        print("Error!!!", exc)
     print("FIN")

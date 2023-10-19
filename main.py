@@ -7,8 +7,8 @@ from libs.Tileset import TileSet, int_list
 from moduls.logic import processing
 
 pg.init()
-FILENAME = "sum1.lg"
-WSIZE = (720 + 400, 480 + 200)
+FILENAME = "fullsum.lg"
+WSIZE = (720*2 + 400, 480*2 + 200)
 
 logger = logging.getLogger("GridEdit")
 
@@ -46,6 +46,7 @@ class Grid:
         self.highlighting = None
         self.copy_buffer = []
         self.update_display()
+        self.history = []
 
     def get_current_surface(self):
         surface = pg.Surface(self.rect.size)
@@ -373,7 +374,7 @@ class ToolsMenu:
 class GridEditApp(App.App):
     def __init__(self):
         screen = pg.display.set_mode(WSIZE)
-        pg.display.set_caption("GridEdit")
+        pg.display.set_caption(f"GridEdit '{FILENAME}'")
         super(GridEditApp, self).__init__(screen)
         self.tileset = TileSet(autorotate_tile=True)
         self.tileset.load("moduls/logic")

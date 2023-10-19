@@ -184,25 +184,31 @@ class CompilLogic:
             nextt = stack.pop(-1)
             while nextt:
                 pos, run_direction = nextt
-                self.path2group[pos] = [None] * 4
+                if pos not in self.path2group:
+                    self.path2group[pos] = [None] * 4
                 nextt = None
                 x, y = pos
                 tile = self.field[pos]
                 tile_key, tile_direction = tile
                 prop = self.tileset.properties[tile_key]
                 around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
+                prop_output = prop["output"]
+                if prop.get("paths"):
+
+                    trun_direction2 = (run_direction - tile_direction + 2) % 4
+                    prop_output = prop["paths"][str(trun_direction2)] + [trun_direction2]
                 # напрвлениЯ в сис корд тайла
-                for out_d in prop["output"]:
+                for out_d in prop_output:
                     # напрвление в сис корд поля
                     out_dd = (out_d + tile_direction) % 4
                     self.path2group[pos][out_dd] = group_id
                     out_pos = around_poss[out_dd]
-                    if out_pos in self.path2group:
-                        continue
                     out_tile = self.field[out_pos]
                     if out_tile:
                         # напрвление в сис корд поля
                         _out_inp_d = (out_dd + 2)  % 4
+                        if out_pos in self.path2group and self.path2group[out_pos][_out_inp_d] is not None:
+                            continue
                         # напрвление в сис корд тайла
                         out_inp_dd = (_out_inp_d - out_tile[1]) % 4
                         out_prop = all_prop[out_tile[0]]
@@ -223,12 +229,13 @@ class CompilLogic:
         return group_id
 
     def get_path_group(self, pos, direction):
-        if pos not in self.path2group:
+        if pos not in self.path2group or self.path2group[pos][direction] is None:
             return self.create_path_group(pos, direction)
         return self.path2group[pos][direction]
 
     def get_path_value(self, pos, direction):
         group_id = self.get_path_group(pos, direction)
+        print("pd", pos, direction, self.path2group)
         print("path", group_id, self.path_groups_inout[group_id])
         if group_id not in self.path_groups_value:
             all_v = [self.run_tile(pos)[direction] for pos, direction in self.path_groups_inout[group_id][0]]

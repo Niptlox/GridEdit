@@ -157,6 +157,7 @@ class CompilLogic:
         self.path2group = {}
         self.path_groups_inout = {}
         self.path_groups_value = {}
+        self.next_group_id = 0
 
     def find_path(self, pos):
         x, y = pos
@@ -173,18 +174,65 @@ class CompilLogic:
         get_pos = around_poss[direction]
         self.lamps[pos] = self.find_path(get_pos)
 
-    def create_path_group(self, pos, ):
-        pass
+    def create_path_group(self, start_pos, start_direction):
+        group_id = self.next_group_id
+        self.path_groups_inout[group_id] = [set(), set()]
+        self.next_group_id += 1
+        stack = [(start_pos, start_direction)]
+        all_prop = self.tileset.properties
+        while stack:
+            nextt = stack.pop(-1)
+            while nextt:
+                pos, run_direction = nextt
+                self.path2group[pos] = [None] * 4
+                nextt = None
+                x, y = pos
+                tile = self.field[pos]
+                tile_key, tile_direction = tile
+                prop = self.tileset.properties[tile_key]
+                around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
+                # напрвлениЯ в сис корд тайла
+                for out_d in prop["output"]:
+                    # напрвление в сис корд поля
+                    out_dd = (out_d + tile_direction) % 4
+                    self.path2group[pos][out_dd] = group_id
+                    out_pos = around_poss[out_dd]
+                    if out_pos in self.path2group:
+                        continue
+                    out_tile = self.field[out_pos]
+                    if out_tile:
+                        # напрвление в сис корд поля
+                        _out_inp_d = (out_dd + 2)  % 4
+                        # напрвление в сис корд тайла
+                        out_inp_dd = (_out_inp_d - out_tile[1]) % 4
+                        out_prop = all_prop[out_tile[0]]
+                        if out_prop.get("path"):
+                            if out_inp_dd in out_prop["input"]:
+                                if nextt is None:
+                                    nextt = out_pos, out_dd
+                                else:
+                                    stack.append((out_pos, out_dd))
+                        else:
+                            if out_inp_dd in out_prop["output"]:
+                                # таил отдающий значение в группу
+                                self.path_groups_inout[group_id][0].add((out_pos, _out_inp_d))
+                            elif out_inp_dd in out_prop["input"]:
+                                # таил забирающий значение из группы
+                                self.path_groups_inout[group_id][1].add((out_pos, _out_inp_d))
+
+        return group_id
 
     def get_path_group(self, pos, direction):
         if pos not in self.path2group:
-            self.create_path_group(pos)
+            return self.create_path_group(pos, direction)
         return self.path2group[pos][direction]
 
     def get_path_value(self, pos, direction):
         group_id = self.get_path_group(pos, direction)
+        print("path", group_id, self.path_groups_inout[group_id])
         if group_id not in self.path_groups_value:
-            self.path_groups_value[group_id] = sum(map(bool, self.path_groups_inout[group_id][0]))
+            all_v = [self.run_tile(pos)[direction] for pos, direction in self.path_groups_inout[group_id][0]]
+            self.path_groups_value[group_id] = any(all_v)
         return self.path_groups_value[group_id]
 
     def run_tile(self, pos, last_pos=None):
@@ -201,7 +249,7 @@ class CompilLogic:
         # Get inputs value
         inputs_v = []
         if prop.get("path"):
-            output_t = (self.get_path_value(pos, (i + direction) % 4) for i in prop["output"])
+            _output_v = [self.get_path_value(pos, (i + direction) % 4) for i in prop["output"]]
         else:
             for input_d in prop["input"]:
                 i_dd = (input_d + direction) % 4
@@ -221,17 +269,16 @@ class CompilLogic:
                 inputs_v.append(val)
             if len(inputs_v) == 1:
                 inputs_v = inputs_v[0]
-
             # Run function
             switch = lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction))
             _output_v = eval(prop["processing"], locals())(inputs_v)
-            output_t = [False] * 4
-            if prop["output"]:
-                if not isinstance(_output_v, (list, tuple)):
-                    output_t[(prop["output"][0] + direction) % 4] = _output_v
-                else:
-                    for out_d, out_v in zip(prop["output"], _output_v):
-                        output_t[(out_d + direction) % 4] = out_v
+        output_t = [False] * 4
+        if prop["output"]:
+            if not isinstance(_output_v, (list, tuple)):
+                output_t[(prop["output"][0] + direction) % 4] = _output_v
+            else:
+                for out_d, out_v in zip(prop["output"], _output_v):
+                    output_t[(out_d + direction) % 4] = out_v
         print("res", tile, pos, inputs_v, output_t, "}")
         self.runed[pos] = output_t
         return output_t

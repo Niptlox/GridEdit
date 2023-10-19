@@ -7,7 +7,7 @@ from libs.Tileset import TileSet, int_list
 from moduls.logic import processing
 
 pg.init()
-FILENAME = "fullsumxor.lg"
+FILENAME = "sum1.lg"
 WSIZE = (720 + 400, 480 + 200)
 
 logger = logging.getLogger("GridEdit")

@@ -23,10 +23,12 @@ def set_filename(new_filename):
     pg.display.set_caption(f"GridEdit '{FILENAME}'")
     return FILENAME
 
+
 class ColorSchema:
     grid_bg_color = "#9badb7"
     grid_line_color = "#847e87"
     tools_menu_font_1 = pg.font.SysFont("Roboto", 25)
+    tools_menu_font_labels = pg.font.SysFont("Roboto", 25)
     tools_menu_font_1_color = "#FFFFFF"
     toolsmenu_bg_color = "#4B5563"
     toolsmenu_border_color = "#000000"
@@ -94,7 +96,6 @@ class Grid:
             minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), \
                 max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
             pg.draw.rect(surface, self.color_schema.highlighting_color, (minx, miny, maxx - minx, maxy - miny), 2)
-
         return surface
 
     def set_num_of_active_tile(self, num):
@@ -448,6 +449,13 @@ class ToolsMenu:
 
     def draw(self, surface):
         surface.blit(self.display, self.rect)
+        mpos = pg.mouse.get_pos()
+        if self.rect.collidepoint(mpos):
+            tool = self.mouse_pos2cell(mpos)
+            if tool:
+                label = self.tileset.properties[tool[0]].get("label", str(tool[0]).replace("_", " "))
+                text = self.color_schema.tools_menu_font_labels.render(label, True, "white", (34, 32, 52, 100))
+                surface.blit(text, (mpos[0], mpos[1] - text.get_height()-2))
 
 
 class GridEditApp(App.App):

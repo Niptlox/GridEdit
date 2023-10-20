@@ -17,6 +17,7 @@
     [
       "path_+",
       {
+        "label": "path +",
         "input": [ 0, 1, 2, 3 ],
         "output": [ 0, 1, 2, 3 ],
         "processing": "lambda x0123: [any(x0123)] * 4",
@@ -26,6 +27,7 @@
     [
       "path_I",
       {
+        "label": "path |",
         "input": [ 0, 2 ],
         "output": [ 0, 2 ],
         "processing": "lambda x02: [any(x02)]*2",
@@ -35,6 +37,7 @@
     [
       "bridge_+",
       {
+        "label": "bridge +",
         "input": [ 0, 1, 2, 3 ],
         "output": [ 0, 1, 2, 3 ],
         "processing": "lambda x0123: [x0123[0] or x0123[2], x0123[1] or x0123[3], x0123[0] or x0123[2], x0123[1] or x0123[3]]",
@@ -45,6 +48,7 @@
     [
       "path_L",
       {
+        "label": "path L",
         "input": [ 0, 1],
         "output": [ 0, 1],
         "processing": "lambda x0123: [any(x0123)] * 2",
@@ -54,6 +58,7 @@
     [
       "diod",
       {
+        "label": "diod",
         "input": [ 2 ],
         "output": [ 0 ],
         "processing": "lambda x2: x2"
@@ -62,6 +67,7 @@
     [
       "lamp_on",
       {
+        "label": "lamp on",
         "input": [ 0],
         "output": [ ],
         "processing": "lambda x0123: (switch('lamp_on') if x0123 else switch('lamp_off'))"
@@ -71,6 +77,7 @@
     [
       "lamp_off",
       {
+        "label": "lamp off",
         "input": [ 0],
         "output": [ ],
         "processing": "lambda x0123: (switch('lamp_on') if x0123 else switch('lamp_off'))"
@@ -79,6 +86,7 @@
     [
       "not",
       {
+        "label": "not",
         "input": [ 2 ],
         "output": [ 0 ],
         "processing": "lambda x2: not x2"
@@ -87,6 +95,7 @@
     [
       "xor",
       {
+        "label": "xor",
         "input": [ 1, 2 ],
         "output": [ 0 ],
         "processing": "lambda x12: 0 if all(x12) else any(x12)"
@@ -95,6 +104,7 @@
     [
       "and_2_u",
       {
+        "label": "and",
         "input": [ 1, 2 ],
         "output": [ 0 ],
         "processing": "lambda x12: all(x12)"
@@ -103,6 +113,7 @@
     [
       "and_2_r",
       {
+        "label": "and",
         "input": [ 0, 2 ],
         "output": [ 1 ],
         "processing": "lambda x02: all(x02)"
@@ -111,6 +122,7 @@
     [
       "and_3_u",
       {
+        "label": "and",
         "input": [ 1, 2, 3 ],
         "output": [ 0 ],
         "processing": "lambda x123: all(x123)"
@@ -119,6 +131,7 @@
     [
       "or_2_u",
       {
+        "label": "or",
         "input": [ 1, 2 ],
         "output": [ 0 ],
         "processing": "lambda x12: any(x12)"
@@ -127,6 +140,7 @@
     [
       "or_2_r",
       {
+        "label": "or",
         "input": [ 0, 2 ],
         "output": [ 1 ],
         "processing": "lambda x02: any(x02)"
@@ -135,6 +149,7 @@
     [
       "or_3_u",
       {
+        "label": "or",
         "input": [ 1, 2, 3 ],
         "output": [ 0 ],
         "processing": "lambda x123: any(x123)"
@@ -143,6 +158,7 @@
     [
       "input_on",
       {
+        "label": "input 1",
         "on_click": "switch('input_off')",
         "input": [],
         "output": [ 0 ],
@@ -152,6 +168,7 @@
     [
       "input_off",
       {
+        "label": "input 0",
         "on_click": "switch('input_on')",
         "input": [],
         "output": [ 0 ],

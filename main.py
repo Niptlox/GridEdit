@@ -1,20 +1,27 @@
 import logging
 import pygame as pg
+import tkinter.filedialog as fd
 
 from libs.ChunkGrid import ChunkGrid, save, load
 from libs.PgUI import App
+from libs.PgUI.InfoMessage import InfoMessage
 from libs.Tileset import TileSet, int_list
+from libs.filedialog import get_file_path
 from moduls.logic import processing
 
 pg.init()
-FILENAME = "saves/fullsum.lg"
+FILENAME = ""
 WSIZE = (720 * 2 + 400, 480 * 2 + 200)
 
 logger = logging.getLogger("GridEdit")
 
 
 # logger.setLevel()
-
+def set_filename(new_filename):
+    global FILENAME
+    FILENAME = new_filename
+    pg.display.set_caption(f"GridEdit '{FILENAME}'")
+    return FILENAME
 
 class ColorSchema:
     grid_bg_color = "#9badb7"
@@ -29,7 +36,7 @@ class ColorSchema:
 
 
 class Grid:
-    def __init__(self, rect, color_schema=ColorSchema, tileset: TileSet = None):
+    def __init__(self, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print):
         self.rect = pg.Rect(rect)
         self.tile_side = 16
         self.display = pg.Surface(self.rect.size)
@@ -47,7 +54,8 @@ class Grid:
         self.copy_buffer = []
         self.update_display()
         self.history = []
-        self.history_iter = -1 # last index( -1, -2, -3...)
+        self.history_iter = -1  # last index( -1, -2, -3...)
+        self.show_message = show_message
 
     def get_current_surface(self):
         surface = pg.Surface(self.rect.size)
@@ -194,20 +202,17 @@ class Grid:
                 self.run()
             if (event.key == pg.K_d and event.mod & pg.KMOD_LCTRL) or event.key == pg.K_DELETE:
                 self.clear()
-            if event.key == pg.K_s and event.mod & pg.KMOD_LCTRL:
-                with open(FILENAME, "wb") as f:
-                    self.field.save(f)
+            if event.key == pg.K_s and event.mod & pg.KMOD_LCTRL and keyboard_mods & pg.KMOD_LSHIFT:
+                self.save(saveas=True)
+            elif event.key == pg.K_s and event.mod & pg.KMOD_LCTRL:
+                self.save(saveas=False)
             if event.key == pg.K_o and event.mod & pg.KMOD_LCTRL:
-                try:
-                    with open(FILENAME, "rb") as f:
-                        self.field.load_file(f)
-                except Exception as exc:
-                    logger.error(f"Error load file: {exc}")
+                self.open()
             self.update_display()
 
     def run(self):
         logger.error("Start processing...")
-        processing.main(self.field, self.tileset)
+        processing.main(self.field, self.tileset, self.show_message)
         logger.error("Fin processing")
 
     def update_display(self):
@@ -218,16 +223,15 @@ class Grid:
         if self.rect.collidepoint(pg.mouse.get_pos()) and self.active_tile:
             surface.blit(self.tileset.get_tile_image(self.active_tile, scale=2), pg.mouse.get_pos())
 
-    def clear(self):
+    def clear(self, save_history=True):
         if self.highlighting:
             hl_p1, hl_p2 = self.highlighting
-            for y in range(min(hl_p1[1], hl_p2[1]), max(hl_p1[1], hl_p2[1])):
-                for x in range(min(hl_p1[0], hl_p2[0]), max(hl_p1[0], hl_p2[0])):
-                    self.field[(x, y)] = None
-        else:
-            self.field.clear()
+            minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), max(hl_p1[0], hl_p2[0]), max(
+                hl_p1[1], hl_p2[1])
+            new_clear = [[None] * (maxx - minx)] * (maxy - miny)
+            self.paste((minx, miny), new_clear, save_history=save_history)
 
-    def copy_highlight(self, dell=False):
+    def copy_highlight(self, dell=False, save_history=True):
         hl_p1, hl_p2 = self.highlighting
         minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), max(hl_p1[0], hl_p2[0]), max(
             hl_p1[1], hl_p2[1])
@@ -238,6 +242,10 @@ class Grid:
                 self.copy_buffer[-1].append(self.field[(x, y)])
                 if dell:
                     self.field[(x, y)] = None
+        if save_history and self.copy_buffer:
+            new = [[None] * len(self.copy_buffer[0])] * len(self.copy_buffer)
+            self.add_action_history({"type": "replace_group", "pos": (minx, miny),
+                                     "old": list(self.copy_buffer), "new": new})
 
     def paste(self, pos, buffer, save_history=True):
         last = []
@@ -252,7 +260,7 @@ class Grid:
 
     def add_action_history(self, action):
         if self.history_iter < -1:
-            del self.history[self.history_iter+1:]
+            del self.history[self.history_iter + 1:]
             self.history_iter = -1
         self.history.append(action)
         print("action", action)
@@ -278,6 +286,33 @@ class Grid:
             self.set_tile(action["pos"], action["new"], save_history=False)
         elif action["type"] == "replace_group":
             self.paste(action["pos"], action["new"], save_history=False)
+
+    def open(self):
+        directory = get_file_path(defaultextension=self.tileset.file_extension,
+                                  filetypes=(("", "*" + self.tileset.file_extension),),
+                                  title="Открыть файл", initialdir="./saves/", saveas=False)
+        if directory:
+            set_filename(directory)
+            try:
+                with open(FILENAME, "rb") as f:
+                    self.field.load_file(f)
+            except Exception as exc:
+                self.show_message(f"Error open file: {exc}")
+
+    def save(self, saveas=False):
+        global FILENAME
+        if not FILENAME or saveas:
+            directory = get_file_path(defaultextension=self.tileset.file_extension, initialfile=FILENAME,
+                                      filetypes=(("", "*" + self.tileset.file_extension),),
+                                      title="Сохранить файл", initialdir="./saves/", saveas=True)
+            if directory:
+                set_filename(directory)
+        if FILENAME:
+            try:
+                with open(FILENAME, "wb") as f:
+                    self.field.save(f)
+            except Exception as exc:
+                self.show_message(f"Error save file: {exc}")
 
 
 class ToolsMenu:
@@ -418,17 +453,19 @@ class ToolsMenu:
 class GridEditApp(App.App):
     def __init__(self):
         screen = pg.display.set_mode(WSIZE)
-        pg.display.set_caption(f"GridEdit '{FILENAME}'")
+        pg.display.set_caption(f"GridEdit")
         pg.display.set_icon(pg.image.load("icon.png"))
         super(GridEditApp, self).__init__(screen)
         self.tileset = TileSet(autorotate_tile=True)
         self.tileset.load("moduls/logic")
         self.color_schema = ColorSchema
         th = 250
-        self.grid = Grid((th, 0, self.rect.w - th, self.rect.h), self.color_schema, self.tileset)
+        self.info_message = InfoMessage(self.rect.size)
+        self.grid = Grid((th, 0, self.rect.w - th, self.rect.h), self.color_schema, self.tileset,
+                         show_message=self.info_message.new)
         self.tools_menu = ToolsMenu((0, 0, th, self.rect.h), self.color_schema, self.tileset,
                                     on_tool_selected=self.grid.set_tool_tile)
-        self.ui_elements = [self.grid, self.tools_menu]
+        self.ui_elements = [self.grid, self.tools_menu, self.info_message]
 
     def pg_event(self, event):
         [el.pg_event(event) for el in self.ui_elements]

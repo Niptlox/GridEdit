@@ -1,6 +1,13 @@
 from libs.ChunkGrid import ChunkGrid
 from libs.Tileset import TileSet, TOP, RIGHT, BOTTOM, LEFT
 
+DEBUG = False
+
+
+def dprint(*args, **kwargs):
+    if DEBUG:
+        print(*args, **kwargs)
+
 
 class LogicProcessing:
     def __init__(self, field: ChunkGrid, tileset: TileSet):
@@ -194,7 +201,6 @@ class CompilLogic:
                 around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
                 prop_output = prop["output"]
                 if prop.get("paths"):
-
                     trun_direction2 = (run_direction - tile_direction + 2) % 4
                     prop_output = prop["paths"][str(trun_direction2)] + [trun_direction2]
                 # напрвлениЯ в сис корд тайла
@@ -206,7 +212,7 @@ class CompilLogic:
                     out_tile = self.field[out_pos]
                     if out_tile:
                         # напрвление в сис корд поля
-                        _out_inp_d = (out_dd + 2)  % 4
+                        _out_inp_d = (out_dd + 2) % 4
                         if out_pos in self.path2group and self.path2group[out_pos][_out_inp_d] is not None:
                             continue
                         # напрвление в сис корд тайла
@@ -235,8 +241,8 @@ class CompilLogic:
 
     def get_path_value(self, pos, direction):
         group_id = self.get_path_group(pos, direction)
-        print("pd", pos, direction, self.path2group)
-        print("path", group_id, self.path_groups_inout[group_id])
+        dprint("pd", pos, direction, self.path2group)
+        dprint("path", group_id, self.path_groups_inout[group_id])
         if group_id not in self.path_groups_value:
             all_v = [self.run_tile(pos)[direction] for pos, direction in self.path_groups_inout[group_id][0]]
             self.path_groups_value[group_id] = any(all_v)
@@ -245,7 +251,7 @@ class CompilLogic:
     def run_tile(self, pos, last_pos=None):
         x, y = pos
         tile = self.field[pos]
-        print("{run", tile, pos, )
+        dprint("{run", tile, pos, )
         if tile is None:
             return [False] * 4
         elif pos in self.runed:
@@ -286,14 +292,14 @@ class CompilLogic:
             else:
                 for out_d, out_v in zip(prop["output"], _output_v):
                     output_t[(out_d + direction) % 4] = out_v
-        print("res", tile, pos, inputs_v, output_t, "}")
+        dprint("res", tile, pos, inputs_v, output_t, "}")
         self.runed[pos] = output_t
         return output_t
 
     def run(self):
         poss = get_poss_of_tile(self.field, "lamp_on") + get_poss_of_tile(self.field, "lamp_off")
         for pos in poss:
-            print("=====================")
+            print(f"===================== run lamp (pos={pos}) =========================")
             self.run_tile(pos)
 
 
@@ -321,13 +327,13 @@ def _main(tile_grid: ChunkGrid, tileset):
     print(proc.run_field.tile_locations)
 
 
-def main(tile_grid: ChunkGrid, tileset):
+def main(tile_grid: ChunkGrid, tileset, log=print):
     comp = CompilLogic(tile_grid, tileset)
     # comp.run()
     try:
         comp.run()
     except RecursionError as excRec:
-        print("ErrorRecursion!!!", excRec)
+        log(f"ErrorRecursion!!! {excRec}")
     except Exception as exc:
-        print("Error!!!", exc)
+        log(f"Error!!! {exc}")
     print("FIN")

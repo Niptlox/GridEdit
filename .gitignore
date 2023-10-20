@@ -1,2 +1,7 @@
 .idea
 *.exe
+GridEdit
+*.spec
+dist
+build
+GridEdit.zip

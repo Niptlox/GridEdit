@@ -1,5 +1,6 @@
 {
   "source_type": "tileset",
+  "file_extension": ".lg",
   "preview_": {
     "load_type": "grid",
     "path": "logicGridElemnets8x.png",

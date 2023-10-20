@@ -85,6 +85,7 @@ class TileSet:
 
     def _load_data(self, json_data):
         tiles_data = json_data.get("tiles")
+        self.file_extension = json_data.get("file_extension")
         if tiles_data:
             self.groups = json_data.get("groups", [])
             self.lst_tilekeys_of_groups = sum([e["tiles"] for e in self.groups], [])

@@ -15,7 +15,7 @@ class LogicProcessing:
         self.tileset = tileset
         self.runed_pos = set()
         self.function_of_tiles = {
-            eval(self.tileset.properties[tile_key[0]].get("processing", "lambda: None"), globals(), locals())
+            eval(self.tileset.get_properties(tile_key[0]).get("processing", "lambda: None"), globals(), locals())
             for tile_key in self.tileset.tiles_dict}
         self.run_field = ChunkGrid(6, default_item=lambda: [0] * 4, store_tile_locations=True,
                                    title="run_field")
@@ -39,7 +39,7 @@ class LogicProcessing:
             for a_pos, a_dir, a_tile in around_poss:
                 if set_signal is not None:
                     self.field[pos][a_dir] = set_signal
-                a_prop = self.tileset.properties[a_tile[0]]
+                a_prop = self.tileset.get_properties(a_tile[0])
                 if a_prop["path"]:
                     if first:
                         new_set_signal = self.field[pos][a_dir]
@@ -61,7 +61,7 @@ class LogicProcessing:
             exclusion = set()
         x, y = pos
         tile_key, direction = self.field[pos]
-        prop = self.tileset.properties[tile_key]
+        prop = self.tileset.get_properties(tile_key)
         around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
         paths = prop.get("paths")
         if run_direction is not None:
@@ -80,7 +80,7 @@ class LogicProcessing:
             a_pos = around_poss[i_d]
             a_tile = self.field[a_pos]
             if a_pos not in exclusion and a_tile and a_tile[0] not in self.start_tiles:
-                t_output = self.tileset.properties[a_tile[0]]["input"]
+                t_output = self.tileset.get_properties(a_tile[0])["input"]
                 # print("rec", a_tile, a_pos, i_d, ((i_d + 2 - a_tile[1]) % 4), t_output)
                 if ((i_d + 2 - a_tile[1]) % 4) in t_output:
                     exclusion.add(around_poss[i_d])
@@ -93,7 +93,7 @@ class LogicProcessing:
         runed.add(pos)
         tile_key, direction = self.field[pos]
         print("{", tile_key)
-        prop = self.tileset.properties[tile_key]
+        prop = self.tileset.get_properties(tile_key)
         if "paths" in prop:
             # откуда пришел сигнал
             p_run_direction = str((run_direction - direction + 2) % 4)
@@ -134,7 +134,7 @@ class LogicProcessing:
             # for a_pos, i_d in out_pos:
             #     a_tile = self.field[a_pos]
             #     if a_pos not in runed and a_tile and a_tile[0] not in self.start_tiles:
-            #         a_prop = self.tileset.properties[a_tile[0]]
+            #         a_prop = self.tileset.get_properties(a_tile[0])
             #         t_output = a_prop["input"]
             #         print("rec", a_tile, a_pos, i_d, ((i_d + 2 - a_tile[1]) % 4), t_output)
             #         if ((i_d + 2 - a_tile[1]) % 4) in t_output:
@@ -171,7 +171,7 @@ class CompilLogic:
         tile = self.field[pos]
         tile_key, direction = tile
         around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
-        prop = self.tileset.properties[tile_key]
+        prop = self.tileset.get_properties(tile_key)
 
     def run_lamp(self, pos):
         x, y = pos
@@ -186,7 +186,6 @@ class CompilLogic:
         self.path_groups_inout[group_id] = [set(), set()]
         self.next_group_id += 1
         stack = [(start_pos, start_direction)]
-        all_prop = self.tileset.properties
         while stack:
             nextt = stack.pop(-1)
             while nextt:
@@ -197,7 +196,7 @@ class CompilLogic:
                 x, y = pos
                 tile = self.field[pos]
                 tile_key, tile_direction = tile
-                prop = self.tileset.properties[tile_key]
+                prop = self.tileset.get_properties(tile_key)
                 around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
                 prop_output = prop["output"]
                 if prop.get("paths"):
@@ -217,7 +216,7 @@ class CompilLogic:
                             continue
                         # напрвление в сис корд тайла
                         out_inp_dd = (_out_inp_d - out_tile[1]) % 4
-                        out_prop = all_prop[out_tile[0]]
+                        out_prop = self.tileset.get_properties(out_tile[0])
                         if out_prop.get("path"):
                             if out_inp_dd in out_prop["input"]:
                                 if nextt is None:
@@ -257,7 +256,7 @@ class CompilLogic:
         elif pos in self.runed:
             return self.runed[pos]
         tile_key, direction = tile
-        prop = self.tileset.properties[tile_key]
+        prop = self.tileset.get_properties(tile_key)
         around_poss = ((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
         # Get inputs value
         inputs_v = []
@@ -272,7 +271,7 @@ class CompilLogic:
                 if input_tile is None or input_pos == last_pos:
                     val = False
                 else:
-                    input_prop = self.tileset.properties[input_tile[0]]
+                    input_prop = self.tileset.get_properties(input_tile[0])
                     # print(i_dd, input_tile, "prop", (i_dd2 - input_tile[1]) % 4, input_prop["output"])
                     if (i_dd2 - input_tile[1]) % 4 in input_prop["output"]:
                         val = self.run_tile(input_pos, pos)[i_dd2]

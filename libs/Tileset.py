@@ -93,7 +93,7 @@ class TileSet:
             tiles = _tiles = load_images(self.path, tiles_data)
             _properties = json_data.get("properties")
             keys = _keys = [e[0] if isinstance(e, list) else e for e in _properties]
-            self.properties = {key: v for key, v in _properties}
+            self._properties = {key: v for key, v in _properties}
 
             if self.autorotate_tile:
                 keys = []
@@ -120,6 +120,9 @@ class TileSet:
             self.tiles_dict = {key_r: i for i, key_r in enumerate(keys_r)}
         else:
             raise ExceptionTilesetLoader(self.path)
+
+    def get_properties(self, tile_key):
+        return self._properties.get(tile_key)
 
     def get_tile(self, key):
         if isinstance(key, str):

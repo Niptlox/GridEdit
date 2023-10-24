@@ -200,6 +200,8 @@
     "path": "processing.py",
     "type": "py",
     "run": "main",
+    "input": {"1":  "input_on", "0":  "input_off"},
+    "output": {"1":  "lamp_on", "0":  "lamp_off"},
     "start_tiles": ["input_on", "input_off"]
   }
 }

@@ -1,11 +1,26 @@
 import tkinter.filedialog as fd
-from libs.ChunkGrid import ChunkGrid, save, load
+import pygame as pg
+
+from libs.ColorSchema import ColorSchema
+from libs.ChunkGrid import ChunkGrid, save, load, logger
 from libs.filedialog import get_file_path
 from moduls.logic import processing
 from libs.Tileset import TileSet, int_list
 
+FILENAME = "saves/fullsumxor.lg"
+
+
+# logger.setLevel()
+def set_filename(new_filename):
+    global FILENAME
+    FILENAME = new_filename
+    pg.display.set_caption(f"GridEdit '{FILENAME}'")
+    return FILENAME
+
+
 class Grid:
-    def __init__(self, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print):
+    def __init__(self, app, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print):
+        self.app = app
         self.rect = pg.Rect(rect)
         self.tile_side = 16
         self.display = pg.Surface(self.rect.size)
@@ -25,6 +40,8 @@ class Grid:
         self.history = []
         self.history_iter = -1  # last index( -1, -2, -3...)
         self.show_message = show_message
+        if FILENAME:
+            self.open(FILENAME)
 
     def get_current_surface(self):
         surface = pg.Surface(self.rect.size)
@@ -61,7 +78,7 @@ class Grid:
             hl_p1 = (pg.Vector2(self.scroll) + self.highlighting[0]) * _tile_side
             hl_p2 = (pg.Vector2(self.scroll) + self.highlighting[1]) * _tile_side
             minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), \
-                max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
+                                     max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
             pg.draw.rect(surface, self.color_schema.highlighting_color, (minx, miny, maxx - minx, maxy - miny), 2)
         return surface
 
@@ -255,10 +272,11 @@ class Grid:
         elif action["type"] == "replace_group":
             self.paste(action["pos"], action["new"], save_history=False)
 
-    def open(self):
-        directory = get_file_path(defaultextension=self.tileset.file_extension,
-                                  filetypes=(("", "*" + self.tileset.file_extension),),
-                                  title="Открыть файл", initialdir="./saves/", saveas=False)
+    def open(self, directory=None):
+        if directory is None:
+            directory = get_file_path(defaultextension=self.tileset.file_extension,
+                                      filetypes=(("", "*" + self.tileset.file_extension),),
+                                      title="Открыть файл", initialdir="./saves/", saveas=False)
         if directory:
             set_filename(directory)
             try:

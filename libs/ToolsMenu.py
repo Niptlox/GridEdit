@@ -22,17 +22,17 @@ class ToolsMenu:
         self.scroll_active = True
         self.scroll = [0, 0]
         self.max_height = 0
-        self.update_display()
         self.tools_rect = []
-
+        self.additional_tools = {}
         self.set_active_tool(None)
+        self.update_display()
 
     def get_current_surface(self):
         if self.vertical:
             return self._get_current_surface_vertical()
         return self._get_current_surface_horizontal()
 
-    def _get_current_surface_horizontal(self):
+    """def _get_current_surface_horizontal(self):
         surface = pg.Surface(self.rect.size)
         surface.fill(self.color_schema.toolsmenu_bg_color)
         tiles = self.tileset.get_tiles()
@@ -43,7 +43,7 @@ class ToolsMenu:
                              [x - 1, y - 1, self.tile_side + 2, self.tile_side + 2])
             surface.blit(pg.transform.scale(tiles[i][0], (self.tile_side, self.tile_side)), (x, y))
             x += self.tile_side + self.tiles_space_x
-        return surface
+        return surface"""
 
     def _get_current_surface_vertical(self):
         self.tools_rect = []
@@ -58,6 +58,8 @@ class ToolsMenu:
             start_x += self.scroll[0]
             y += self.scroll[1]
         i = 0
+        if self.additional_tools:
+            y += self.color_schema.additional_tools_height
         for group in groups:
             x = start_x
             name, tile_keys = group["title"], group["tiles"]
@@ -85,6 +87,16 @@ class ToolsMenu:
         else:
             self.scroll_active = False
             self.scroll = [0, 0]
+        if self.additional_tools:
+            pg.draw.rect(surface, self.color_schema.additional_tools_bg_color,
+                         (0, 0, self.rect.w, self.color_schema.additional_tools_height))
+            y = 2
+            x = 2
+            for e in self.additional_tools.values():
+                e.rect.x, e.rect.y = x, y
+                e.draw(surface)
+                x += e.rect.w + 5
+        pg.draw.line(surface, "black", (self.rect.w, 0), self.rect.size, 5)
         return surface
 
     def set_active_tool(self, tool):
@@ -101,6 +113,12 @@ class ToolsMenu:
         return None
 
     def pg_event(self, event):
+        f = False
+        for e in self.additional_tools.values():
+            f |= e.pg_event(event)
+        if f:
+            self.update_display()
+            return True
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == pg.BUTTON_LEFT:
                 if self.rect.collidepoint(event.pos):

@@ -15,10 +15,10 @@ class Grid(_Grid):
         self.f = tileset.new_function("main", self.field)
         self.input_values = {}
 
+
     def update_output_input_tiles(self, function_d):
         input_tile_keys = self.tileset.processing["input"].values()
         output_tile_keys = self.tileset.processing["output"].values()
-        print(self.field.tile_locations)
         input_poss = [e for tile_key in input_tile_keys for e in self.field.get_poss_of_tile(tile_key)]
         output_poss = [e for tile_key in output_tile_keys for e in self.field.get_poss_of_tile(tile_key)]
         function_d["input_tiles"] = sorted(input_poss)
@@ -34,7 +34,6 @@ class Grid(_Grid):
         output_1 = self.tileset.processing["output"]["1"]
         res = []
         for pos in output_tiles:
-            print(pos, self.field[pos])
             res.append(self.field[pos][0] == output_1)
         return res
 
@@ -52,6 +51,14 @@ class Grid(_Grid):
             if event.key == pg.K_u:
                 self.update_output_input_tiles(self.f)
                 print(self.f)
+
+    def get_line_tiles(self):
+        row, column = super().get_line_tiles()
+        if self.app.tools_menu.magic_line_mode and row:
+            joint_p, joint_t = (row & column).pop()
+            row = {(p, ("path_+", 0)) if p == joint_p else (p, (t[0], 1)) for p, t in row}
+            column = {(p, (t[0], 0)) for p, t in column if p != joint_p}
+        return row, column
 
     def get_input(self, value_num):
         return self.input_values.get(value_num, 0)

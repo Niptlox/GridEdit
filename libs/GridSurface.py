@@ -216,28 +216,28 @@ class Grid:
         self.display = self.get_current_surface()
 
     def get_line_tiles(self):
-        row, column = [], []
+        row, column = set(), set()
         if self.line:
             minx, miny, maxx, maxy = min(self.line[0][0], self.line[1][0]), min(self.line[0][1], self.line[1][1]), \
                 max(self.line[0][0], self.line[1][0]), max(self.line[0][1], self.line[1][1])
             for ix in range(minx, maxx + 1):
-                row.append((ix, self.line[0][1]))
+                row.add(((ix, self.line[0][1]), self.active_tile))
             for iy in range(miny, maxy + 1):
-                column.append((self.line[1][0], iy))
+                column.add(((self.line[1][0], iy), self.active_tile))
         return row, column
 
     def draw_line(self, surface: pg.Surface):
         if self.active_tile:
             _tile_side = self.tile_side * self.zoom_scale
             row, column = self.get_line_tiles()
-            img = self.tileset.get_tile_image(self.active_tile, scale=self.zoom_scale)
-            for tpos in row + column:
+            for tpos, tile in row | column:
+                img = self.tileset.get_tile_image(tile, scale=self.zoom_scale)
                 surface.blit(img, ((self.scroll[0] + tpos[0]) * _tile_side, (self.scroll[1] + tpos[1]) * _tile_side))
 
     def set_line(self):
         row, column = self.get_line_tiles()
-        for tpos in row + column:
-            self.set_tile(tpos, self.active_tile)
+        for tpos, tile in row | column:
+            self.set_tile(tpos, tile)
         self.line = None
         self.update_display()
 

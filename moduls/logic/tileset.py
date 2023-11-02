@@ -2,7 +2,6 @@ from libs.Tileset import TileSet as _TileSet
 
 
 class TileSet(_TileSet):
-    pass
 
     def __init__(self):
         super().__init__(autorotate_tile=True)

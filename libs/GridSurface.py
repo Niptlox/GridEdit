@@ -3,7 +3,7 @@ import pygame as pg
 
 from libs.ColorSchema import ColorSchema
 from libs.ChunkGrid import ChunkGrid, save, load, logger
-from libs.filedialog import get_file_path
+from libs.TkUI.filedialog import get_file_path
 from moduls.logic import processing
 from libs.Tileset import TileSet, int_list
 
@@ -30,11 +30,12 @@ class Grid:
         self.field = ChunkGrid(store_tile_locations=True)
         self.tileset: TileSet = tileset
         self.active_tile = None
+        self.line = None  # (pos1, pos2)
         self.scroll_step = 1
         self.zoom_step = 0.25
         self.zoom_min = 0.5
         self.mouse_grab_field = None
-        self.highlighting = None
+        self.highlighting = None  # (pos1, pos2)
         self.copy_buffer = []
         self.update_display()
         self.history = []
@@ -74,11 +75,12 @@ class Grid:
                     # pos = ix * _tile_side + line_offset_x, iy * _tile_side + line_offset_y
                     pos = (pg.Vector2(self.scroll) + tile_pos) * _tile_side
                     surface.blit(img, pos)
+        self.draw_line(surface)
         if self.highlighting:
             hl_p1 = (pg.Vector2(self.scroll) + self.highlighting[0]) * _tile_side
             hl_p2 = (pg.Vector2(self.scroll) + self.highlighting[1]) * _tile_side
             minx, miny, maxx, maxy = min(hl_p1[0], hl_p2[0]), min(hl_p1[1], hl_p2[1]), \
-                                     max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
+                max(hl_p1[0], hl_p2[0]), max(hl_p1[1], hl_p2[1])
             pg.draw.rect(surface, self.color_schema.highlighting_color, (minx, miny, maxx - minx, maxy - miny), 2)
         return surface
 
@@ -127,16 +129,18 @@ class Grid:
                     self.highlighting = None
                     if keyboard_mods & pg.KMOD_LSHIFT:
                         self.highlighting = [tile_pos, (tile_pos[0] + 1, tile_pos[1] + 1)]
-                    elif keyboard_mods & pg.KMOD_LCTRL and self.field[tile_pos]:
-                        self.click_tile(tile_pos)
-                    elif keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
-                        self.set_tile(tile_pos, (self.field[tile_pos][0], (self.field[tile_pos][1] + 1) % 4))
+                    elif keyboard_mods & pg.KMOD_LCTRL:
+                        self.line = [tile_pos, tile_pos]
+                        # elif keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
+                    #     self.set_tile(tile_pos, (self.field[tile_pos][0], (self.field[tile_pos][1] + 1) % 4))
                     else:
                         self.set_tile(tile_pos, self.active_tile)
                 elif event.button == pg.BUTTON_RIGHT:
                     logger.debug(tile_pos, None)
                     if keyboard_mods & pg.KMOD_LALT and self.field[tile_pos]:
                         self.set_tile(tile_pos, (self.field[tile_pos][0], (self.field[tile_pos][1] - 1) % 4))
+                    elif keyboard_mods & pg.KMOD_LCTRL and self.field[tile_pos]:
+                        self.click_tile(tile_pos)
                     else:
                         self.set_tile(tile_pos, None)
                 elif event.button == pg.BUTTON_WHEELUP and keyboard_mods & pg.KMOD_LCTRL:
@@ -149,10 +153,18 @@ class Grid:
                 tile_pos = self.mouse_pos2tile(event.pos)
                 self.highlighting[1] = (tile_pos[0] + 1, tile_pos[1] + 1)
                 self.update_display()
+            elif self.line:
+                self.line[1] = self.mouse_pos2tile(event.pos)
+                self.update_display()
+
             if event.buttons[1] and self.rect.collidepoint(event.pos):
                 self.scroll[0] += event.rel[0] / (self.tile_side * self.zoom_scale)
                 self.scroll[1] += event.rel[1] / (self.tile_side * self.zoom_scale)
                 self.update_display()
+        elif event.type == pg.MOUSEBUTTONUP:
+            if event.button == pg.BUTTON_LEFT and self.line:
+                self.set_line()
+                self.line = None
         if event.type == pg.KEYDOWN:
             if keyboard_mods & pg.KMOD_LCTRL:
                 if event.key == pg.K_c:
@@ -202,6 +214,32 @@ class Grid:
 
     def update_display(self):
         self.display = self.get_current_surface()
+
+    def get_line_tiles(self):
+        row, column = [], []
+        if self.line:
+            minx, miny, maxx, maxy = min(self.line[0][0], self.line[1][0]), min(self.line[0][1], self.line[1][1]), \
+                max(self.line[0][0], self.line[1][0]), max(self.line[0][1], self.line[1][1])
+            for ix in range(minx, maxx + 1):
+                row.append((ix, self.line[0][1]))
+            for iy in range(miny, maxy + 1):
+                column.append((self.line[1][0], iy))
+        return row, column
+
+    def draw_line(self, surface: pg.Surface):
+        if self.active_tile:
+            _tile_side = self.tile_side * self.zoom_scale
+            row, column = self.get_line_tiles()
+            img = self.tileset.get_tile_image(self.active_tile, scale=self.zoom_scale)
+            for tpos in row + column:
+                surface.blit(img, ((self.scroll[0] + tpos[0]) * _tile_side, (self.scroll[1] + tpos[1]) * _tile_side))
+
+    def set_line(self):
+        row, column = self.get_line_tiles()
+        for tpos in row + column:
+            self.set_tile(tpos, self.active_tile)
+        self.line = None
+        self.update_display()
 
     def draw(self, surface):
         surface.blit(self.display, self.rect)

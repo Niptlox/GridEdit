@@ -1,5 +1,5 @@
 from libs import ColorSchema
-from libs.Grid import Grid as _Grid
+from libs.GridSurface import Grid as _Grid
 from .processing import main
 from .chunk_grid import ChunkGrid
 from .tileset import TileSet

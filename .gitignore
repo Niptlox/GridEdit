@@ -1,6 +1,6 @@
 .idea
 *.exe
-GridEdit
+GridEditExe
 *.spec
 dist
 build

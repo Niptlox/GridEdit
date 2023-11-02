@@ -17,3 +17,10 @@ class ChunkGrid(_ChunkGrid):
                 res.append(pos)
         return res
 
+    def run_function(self, function_d, input_val):
+        field = function_d["field"]
+        self.input_values = {}
+
+        main(field, self.tileset)
+
+

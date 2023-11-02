@@ -174,7 +174,46 @@
         "output": [ 0 ],
         "processing": "lambda x: 0"
       }
+    ],
+    [
+      "function_in_0",
+      {
+        "label": "function input top",
+        "input": [],
+        "output": [ 2 ],
+        "processing": "lambda x: get_input(0)"
+
+      }
+    ],
+    [
+      "function_in_3",
+      {
+        "label": "function input left",
+        "input": [],
+        "output": [ 2 ],
+        "processing": "lambda x: get_input(3)"
+      }
+    ],
+    [
+      "function_in_2",
+      {
+        "label": "function input bottom",
+        "input": [],
+        "output": [ 2 ],
+        "processing": "lambda x: get_input(2)"
+
+      }
+    ],
+    [
+      "function_out_1",
+      {
+        "label": "function output right",
+        "input": [2],
+        "output": [],
+        "processing": "lambda x: set_result(1, x)"
+      }
     ]
+
   ],
   "groups": [
     {
@@ -193,6 +232,10 @@
     {
       "title": "Operands",
       "tiles": ["diod", "not", "xor", "and_2_u", "and_2_r", "and_3_u", "or_2_u", "or_2_r", "or_3_u" ]
+    },
+    {
+      "title": "Function operators",
+      "tiles": ["function_in_0", "function_in_3", "function_in_2", "function_out_1"]
     }
 
   ],

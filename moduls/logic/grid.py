@@ -13,6 +13,7 @@ class Grid(_Grid):
         super(Grid, self).__init__(app, rect, color_schema, tileset, show_message)
         self.field = ChunkGrid()
         self.f = tileset.new_function("main", self.field)
+        self.input_values = {}
 
     def update_output_input_tiles(self, function_d):
         input_tile_keys = self.tileset.processing["input"].values()
@@ -23,20 +24,20 @@ class Grid(_Grid):
         function_d["input_tiles"] = sorted(input_poss)
         function_d["output_tiles"] = sorted(output_poss)
 
-    def run_function(self, function_d, input_val):
-        # self.update_output_input_tiles(function_d)
+    def set_input_tiles(self, input_val, input_tiles):
         input_1 = self.tileset.processing["input"]["1"]
         input_0 = self.tileset.processing["input"]["0"]
-        output_1 = self.tileset.processing["output"]["1"]
-        output_0 = self.tileset.processing["output"]["0"]
-        for pos, val in zip(function_d["input_tiles"], input_val):
+        for pos, val in zip(input_tiles, input_val):
             self.field.set_tile_key(pos, input_1 if val else input_0)
-        main(self.field, self.tileset)
+
+    def get_output_tiles(self, output_tiles):
+        output_1 = self.tileset.processing["output"]["1"]
         res = []
-        for pos in function_d["output_tiles"]:
+        for pos in output_tiles:
             print(pos, self.field[pos])
             res.append(self.field[pos][0] == output_1)
         return res
+
 
     def pg_event(self, event):
         super(Grid, self).pg_event(event)
@@ -51,3 +52,6 @@ class Grid(_Grid):
             if event.key == pg.K_u:
                 self.update_output_input_tiles(self.f)
                 print(self.f)
+
+    def get_input(self, value_num):
+        return self.input_values.get(value_num, 0)

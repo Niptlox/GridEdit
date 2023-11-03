@@ -10,12 +10,18 @@ from moduls.logic.tileset import TileSet
 from moduls.logic.tools_menu import ToolsMenu
 
 pg.init()
+FULLSCREEN = False
 WSIZE = (1200, 700)
+WSIZE = 2560/1.5, 1440/1.5
 
 
 class GridEditApp(App.App):
     def __init__(self):
-        screen = pg.display.set_mode(WSIZE)
+        if FULLSCREEN:
+            screen = pg.display.set_mode((0, 0), pg.FULLSCREEN)
+            print(screen.get_size())
+        else:
+            screen = pg.display.set_mode(WSIZE)
         pg.display.set_caption(f"GridEdit")
         pg.display.set_icon(pg.image.load("icon.png"))
         super(GridEditApp, self).__init__(screen)

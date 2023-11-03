@@ -4,6 +4,8 @@ import os
 import pygame as pg
 import json
 
+from libs.UClass.UClass import UClass
+
 SRC_TILESET = "tileset"
 LOADER_GRID = "grid"
 TOP, RIGHT, BOTTOM, LEFT = 0, 1, 2, 3
@@ -72,10 +74,10 @@ def load_source(filepath, src_type, run_exception=True):
     return res
 
 
-class TileSet:
+class TileSet(UClass):
     def __init__(self, autorotate_tile=True):
-        self.tiles = []
         self.path = ""
+        self.tiles = []
         self.autorotate_tile = autorotate_tile
 
     def load(self, path):
@@ -129,6 +131,17 @@ class TileSet:
             key = (key, 0)
         return self.tiles[self.tiles_dict.get(key)]
 
+    def add_tile(self, key, tile_imgs, properties=None):
+        if self.autorotate_tile:
+            for rot in range(4):
+                self.tiles.append((tile_imgs[rot], tile_imgs[rot], (key, rot)))
+                self.tiles_dict[(key, rot)] = len(self.tiles) - 1
+        else:
+            self.tiles.append((tile_imgs, tile_imgs, key))
+            self.tiles_dict[key] = len(self.tiles) - 1
+
+        self._properties[key] = {} if properties is None else properties
+
     def get_tiles(self):
         return self.tiles
 
@@ -137,3 +150,13 @@ class TileSet:
         if scale == 1:
             return img
         return pg.transform.scale(img, pg.Vector2(img.get_size()) * scale)
+
+    def __setstate__(self, state):
+        self.tiles = []
+        self.autorotate_tile = state["autorotate_tile"]
+        self.load(state["path"])
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        state.pop("tiles")
+        return state

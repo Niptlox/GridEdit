@@ -195,12 +195,12 @@
       }
     ],
     [
-      "function_in_2",
+      "function_out_2",
       {
         "label": "function input bottom",
-        "input": [],
-        "output": [ 2 ],
-        "processing": "lambda x: get_input(2)"
+        "input": [2],
+        "output": [],
+        "processing": "lambda x: set_result(2, x)"
 
       }
     ],
@@ -212,7 +212,17 @@
         "output": [],
         "processing": "lambda x: set_result(1, x)"
       }
+    ],
+    [
+      "function",
+      {
+        "label": "function",
+        "input": [0, 3],
+        "output": [1, 2],
+        "processing": "lambda x: run_function(prop, x)"
+      }
     ]
+
 
   ],
   "groups": [
@@ -235,7 +245,11 @@
     },
     {
       "title": "Function operators",
-      "tiles": ["function_in_0", "function_in_3", "function_in_2", "function_out_1"]
+      "tiles": ["function_in_0", "function_in_3", "function_out_1", "function_out_2"]
+    },
+    {
+      "title": "Functions",
+      "tiles": []
     }
 
   ],
@@ -245,6 +259,7 @@
     "run": "main",
     "input": {"1":  "input_on", "0":  "input_off"},
     "output": {"1":  "lamp_on", "0":  "lamp_off"},
-    "start_tiles": ["input_on", "input_off"]
+    "start_tiles": ["input_on", "input_off"],
+    "fin_tiles": ["lamp_on", "lamp_off", "function_out_1", "function_out_2"]
   }
 }

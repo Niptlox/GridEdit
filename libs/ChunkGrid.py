@@ -3,6 +3,8 @@ import logging
 from collections.abc import Iterable
 from collections import defaultdict
 
+from libs.UClass.UClass import UClass
+
 logger = logging.getLogger("ChunkGrid")
 logger.setLevel(logging.DEBUG)
 
@@ -12,7 +14,7 @@ def set_logger(_logger):
     logger = _logger
 
 
-class ChunkGrid:
+class ChunkGrid(UClass):
     def __init__(self, chunk_size=32, store_tile_locations=False, default_item=lambda: None, title="ChunkGrid"):
         self.chunk_size = chunk_size
         self.chunks_field = {}
@@ -60,9 +62,8 @@ class ChunkGrid:
         obj.tile_locations = type(self.tile_locations)(self.tile_locations)
         return obj
 
-
     def pass_chunk(self):
-        return [[self.default_item() for _ in range(self.chunk_size)]  for _ in range(self.chunk_size)]
+        return [[self.default_item() for _ in range(self.chunk_size)] for _ in range(self.chunk_size)]
 
     def xy2chunk_pos(self, xy):
         return xy[0] // self.chunk_size, xy[1] // self.chunk_size
@@ -71,14 +72,19 @@ class ChunkGrid:
         self.chunks_field = {}
         self.tile_locations = defaultdict(list)
 
-    def load_file(self, f):
-        for key, val in load(f).items():
+    def set_data(self, data):
+        for key, val in data.items():
             self.__dict__[key] = val
 
-    def save(self, f):
-        d = dict(self.__dict__)
-        d.pop("default_item")
-        pickle.dump(d, file=f)
+    def __setstate__(self, state):
+        self.__dict__.update(state)
+
+    def __getstate__(self):
+        state = self.__dict__.copy()
+        if "default_item" in state:
+            del state['default_item']
+        return state
+
 
 def save(obj, f):
     pickle.dump(obj, file=f)

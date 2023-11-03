@@ -1,3 +1,4 @@
+import pickle
 import tkinter.filedialog as fd
 import pygame as pg
 
@@ -7,15 +8,24 @@ from libs.TkUI.filedialog import get_file_path
 from moduls.logic import processing
 from libs.Tileset import TileSet, int_list
 
-FILENAME = "saves/fullsumxor.lg"
+VERSION = "v0.2"
+BACKWARD_COMPATIBILITY = set()
+BACKWARD_COMPATIBILITY.add(VERSION)
+FILENAME = "saves/new-file.lg"
+CAPTION = "GridEdit1"
 
 
 # logger.setLevel()
 def set_filename(new_filename):
-    global FILENAME
+    global FILENAME, CAPTION
     FILENAME = new_filename
-    pg.display.set_caption(f"GridEdit '{FILENAME}'")
+    CAPTION = f"GridEdit '{FILENAME}'"
+    pg.display.set_caption(CAPTION)
     return FILENAME
+
+
+def get_caption():
+    return CAPTION
 
 
 class Grid:
@@ -27,7 +37,7 @@ class Grid:
         self.color_schema = color_schema
         self.scroll = [0, 0]
         self.zoom_scale = 4
-        self.field = ChunkGrid(store_tile_locations=True)
+        self.main_field = self.field = ChunkGrid(store_tile_locations=True)
         self.tileset: TileSet = tileset
         self.active_tile = None
         self.line = None  # (pos1, pos2)
@@ -64,8 +74,8 @@ class Grid:
         pos = self.scroll[0] * _tile_side + 1, self.scroll[1] * _tile_side + 1
         pg.draw.circle(surface, "red", pos, radius=r, width=1)
         # scroll_tile = self.scroll[0] // self.tile_side, self.scroll[1] // self.tile_side
-        for ix in range(-1, int(self.rect.w // _tile_side) + 1):
-            for iy in range(-1, int(self.rect.h // _tile_side) + 1):
+        for ix in range(-1, int(self.rect.w // _tile_side) + 2):
+            for iy in range(-1, int(self.rect.h // _tile_side) + 2):
                 tile_pos = pg.Vector2(int_list((ix - self.scroll[0], iy - self.scroll[1])))
                 tile = self.field[int_list(tile_pos)]
                 # if ix == 0:
@@ -208,6 +218,7 @@ class Grid:
             self.update_display()
 
     def run(self):
+        print("Start processing...")
         logger.error("Start processing...")
         processing.main(self.field, self.tileset, self.show_message)
         logger.error("Fin processing")
@@ -217,7 +228,7 @@ class Grid:
 
     def get_line_tiles(self):
         row, column = set(), set()
-        if self.line:
+        if self.line and self.active_tile:
             minx, miny, maxx, maxy = min(self.line[0][0], self.line[1][0]), min(self.line[0][1], self.line[1][1]), \
                 max(self.line[0][0], self.line[1][0]), max(self.line[0][1], self.line[1][1])
             for ix in range(minx, maxx + 1):
@@ -316,12 +327,20 @@ class Grid:
                                       filetypes=(("", "*" + self.tileset.file_extension),),
                                       title="Открыть файл", initialdir="./saves/", saveas=False)
         if directory:
-            set_filename(directory)
-            try:
+            # try:
+                set_filename(directory)
                 with open(FILENAME, "rb") as f:
-                    self.field.load_file(f)
-            except Exception as exc:
-                self.show_message(f"Error open file: {exc}")
+                    data = pickle.load(f)
+                    if data.get("version") in BACKWARD_COMPATIBILITY:
+                        self.main_field.set_all(data["field"])
+                        self.tileset.set_all(data["tileset"])
+                        self.field = self.main_field
+                    else:
+                        self.main_field.set_data(data)
+                        self.field = self.main_field
+                self.show_message(f"Opened: {directory}")
+            # except Exception as exc:
+            #     self.show_message(f"Error open file: {exc}")
 
     def save(self, saveas=False):
         global FILENAME
@@ -332,8 +351,10 @@ class Grid:
             if directory:
                 set_filename(directory)
         if FILENAME:
-            try:
+            # try:
                 with open(FILENAME, "wb") as f:
-                    self.field.save(f)
-            except Exception as exc:
-                self.show_message(f"Error save file: {exc}")
+                    data = {"version": VERSION, "field": self.main_field, "tileset": self.tileset}
+                    pickle.dump(data, file=f)
+                self.show_message(f"Saved: {FILENAME}")
+            # except Exception as exc:
+            #     self.show_message(f"Error save file: {exc}")

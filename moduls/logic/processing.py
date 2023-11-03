@@ -282,8 +282,14 @@ class CompilLogic:
             if len(inputs_v) == 1:
                 inputs_v = inputs_v[0]
             # Run function
+            get_input = self.field.get_function_input
+            set_result = self.field.set_function_result
             switch = lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction))
-            _output_v = eval(prop["processing"], locals())(inputs_v)
+            # run tile processing
+            if prop.get("is_function", False):
+                _output_v = prop["field"].run_function(prop, inputs_v, self.tileset)
+            else:
+                _output_v = eval(prop["processing"], locals())(inputs_v)
         output_t = [False] * 4
         if prop["output"]:
             if not isinstance(_output_v, (list, tuple)):
@@ -296,7 +302,8 @@ class CompilLogic:
         return output_t
 
     def run(self):
-        poss = get_poss_of_tile(self.field, "lamp_on") + get_poss_of_tile(self.field, "lamp_off")
+        poss = sum([get_poss_of_tile(self.field, key) for key in self.tileset.processing.get("fin_tiles", [])],
+                   start=[])
         for pos in poss:
             print(f"===================== run lamp (pos={pos}) =========================")
             self.run_tile(pos)

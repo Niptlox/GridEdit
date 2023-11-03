@@ -121,8 +121,16 @@ class ToolsMenu:
             return True
         if event.type == pg.MOUSEBUTTONDOWN:
             if event.button == pg.BUTTON_LEFT:
+                kmod = pg.key.get_mods()
+
                 if self.rect.collidepoint(event.pos):
-                    self.set_active_tool(self.mouse_pos2cell(event.pos))
+                    if kmod & pg.KMOD_LCTRL:
+                        tile = self.mouse_pos2cell(event.pos)
+                        tool_click = self.tileset.get_properties(tile[0]).get("tool_click")
+                        if tool_click:
+                            tool_click()
+                    else:
+                        self.set_active_tool(self.mouse_pos2cell(event.pos))
 
             keyboard_mods = pg.key.get_mods()
             # print(1, self.active_cell)

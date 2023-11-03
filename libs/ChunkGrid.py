@@ -77,6 +77,8 @@ class ChunkGrid(UClass):
             self.__dict__[key] = val
 
     def __setstate__(self, state):
+        if "default_item" in state:
+            state.pop("default_item")
         self.__dict__.update(state)
 
     def __getstate__(self):

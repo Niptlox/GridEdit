@@ -221,6 +221,24 @@
         "output": [1, 2],
         "processing": "lambda x: run_function(prop, x)"
       }
+    ],
+    [
+      "packer3to1",
+      {
+        "label": "packer 3 to 1",
+        "input": [0, 3, 2],
+        "output": [1],
+        "processing": "lambda x023: [x023]"
+      }
+    ],
+    [
+      "unpacker1to3",
+      {
+        "label": "packer 3 to 1",
+        "input": [3],
+        "output": [0, 1, 2],
+        "processing": "lambda x: x"
+      }
     ]
 
 
@@ -246,6 +264,10 @@
     {
       "title": "Function operators",
       "tiles": ["function_in_0", "function_in_3", "function_out_1", "function_out_2"]
+    },
+    {
+      "title": "Data bus",
+      "tiles": ["packer3to1", "unpacker1to3"]
     },
     {
       "title": "Functions",

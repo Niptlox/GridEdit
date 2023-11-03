@@ -11,7 +11,7 @@ from libs.Tileset import TileSet, int_list
 VERSION = "v0.2"
 BACKWARD_COMPATIBILITY = set()
 BACKWARD_COMPATIBILITY.add(VERSION)
-FILENAME = "saves/new-file.lg"
+FILENAME = "saves/newfile.lg"
 CAPTION = "GridEdit1"
 
 
@@ -51,8 +51,8 @@ class Grid:
         self.history = []
         self.history_iter = -1  # last index( -1, -2, -3...)
         self.show_message = show_message
-        if FILENAME:
-            self.open(FILENAME)
+        # if FILENAME:
+        #     self.open(FILENAME)
 
     def get_current_surface(self):
         surface = pg.Surface(self.rect.size)

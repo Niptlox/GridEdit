@@ -1,12 +1,19 @@
 from libs.ChunkGrid import ChunkGrid
 from libs.Tileset import TileSet, TOP, RIGHT, BOTTOM, LEFT
 
-DEBUG = False
+DEBUG = True
 
 
 def dprint(*args, **kwargs):
     if DEBUG:
         print(*args, **kwargs)
+
+
+def any_v(arr):
+    r = False
+    for v in arr:
+        r = r or v
+    return r
 
 
 class LogicProcessing:
@@ -104,7 +111,7 @@ class LogicProcessing:
         print((x, y - 1), (x + 1, y), (x, y + 1), (x - 1, y))
         print([self.run_field[(x, y - 1)], self.run_field[(x + 1, y)],
                self.run_field[(x, y + 1)], self.run_field[(x - 1, y)]])
-        around_tiles = [bool(_around_tiles[(i + direction) % 4]) for i in range(4)]
+        around_tiles = [(_around_tiles[(i + direction) % 4]) for i in range(4)]
         input_t = [around_tiles[i] for i in prop["input"]]
         if len(input_t) == 1:
             input_t = input_t[0]
@@ -244,7 +251,7 @@ class CompilLogic:
         dprint("path", group_id, self.path_groups_inout[group_id])
         if group_id not in self.path_groups_value:
             all_v = [self.run_tile(pos)[direction] for pos, direction in self.path_groups_inout[group_id][0]]
-            self.path_groups_value[group_id] = any(all_v)
+            self.path_groups_value[group_id] = any_v(all_v)
         return self.path_groups_value[group_id]
 
     def run_tile(self, pos, last_pos=None):
@@ -290,6 +297,7 @@ class CompilLogic:
                 _output_v = prop["field"].run_function(prop, inputs_v, self.tileset)
             else:
                 _output_v = eval(prop["processing"], locals())(inputs_v)
+                print(pos, tile_key, inputs_v, _output_v)
         output_t = [False] * 4
         if prop["output"]:
             if not isinstance(_output_v, (list, tuple)):
@@ -335,7 +343,8 @@ def _main(tile_grid: ChunkGrid, tileset):
 
 def main(tile_grid: ChunkGrid, tileset, log=print):
     comp = CompilLogic(tile_grid, tileset)
-    # comp.run()
+    comp.run()
+    return
     try:
         comp.run()
     except RecursionError as excRec:

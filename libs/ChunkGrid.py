@@ -15,6 +15,8 @@ def set_logger(_logger):
 
 
 class ChunkGrid(UClass):
+    set_all_exceptions = {"default_item"}
+
     def __init__(self, chunk_size=32, store_tile_locations=False, default_item=lambda: None, title="ChunkGrid"):
         self.chunk_size = chunk_size
         self.chunks_field = {}
@@ -72,13 +74,10 @@ class ChunkGrid(UClass):
         self.chunks_field = {}
         self.tile_locations = defaultdict(list)
 
-    def set_data(self, data):
-        for key, val in data.items():
-            self.__dict__[key] = val
-
     def __setstate__(self, state):
-        if "default_item" in state:
-            state.pop("default_item")
+        if "default_item" not in state:
+            # Это костыль надо искать место где удаляеться или теряется default_item
+            self.default_item = lambda: None
         self.__dict__.update(state)
 
     def __getstate__(self):

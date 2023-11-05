@@ -20,7 +20,7 @@
         "label": "path +",
         "input": [ 0, 1, 2, 3 ],
         "output": [ 0, 1, 2, 3 ],
-        "processing": "lambda x0123: [any(x0123)] * 4",
+        "processing": "lambda x0123: [any_v(x0123)] * 4",
         "path": true
       }
     ],
@@ -30,7 +30,7 @@
         "label": "path |",
         "input": [ 0, 2 ],
         "output": [ 0, 2 ],
-        "processing": "lambda x02: [any(x02)]*2",
+        "processing": "lambda x02: [any_v(x02)]*2",
         "path": true
       }
     ],
@@ -51,7 +51,7 @@
         "label": "path L",
         "input": [ 0, 1],
         "output": [ 0, 1],
-        "processing": "lambda x0123: [any(x0123)] * 2",
+        "processing": "lambda x0123: [any_v(x0123)] * 2",
         "path": true
       }
     ],
@@ -98,7 +98,7 @@
         "label": "xor",
         "input": [ 1, 2 ],
         "output": [ 0 ],
-        "processing": "lambda x12: 0 if all(x12) else any(x12)"
+        "processing": "lambda x12: 0 if all_v(x12) else any_v(x12)"
       }
     ],
     [
@@ -107,7 +107,7 @@
         "label": "and",
         "input": [ 1, 2 ],
         "output": [ 0 ],
-        "processing": "lambda x12: all(x12)"
+        "processing": "lambda x12: all_v(x12)"
       }
     ],
     [
@@ -116,7 +116,7 @@
         "label": "and",
         "input": [ 0, 2 ],
         "output": [ 1 ],
-        "processing": "lambda x02: all(x02)"
+        "processing": "lambda x02: all_v(x02)"
       }
     ],
     [
@@ -125,7 +125,7 @@
         "label": "and",
         "input": [ 1, 2, 3 ],
         "output": [ 0 ],
-        "processing": "lambda x123: all(x123)"
+        "processing": "lambda x123: all_v(x123)"
       }
     ],
     [
@@ -134,7 +134,7 @@
         "label": "or",
         "input": [ 1, 2 ],
         "output": [ 0 ],
-        "processing": "lambda x12: any(x12)"
+        "processing": "lambda x12: any_v(x12)"
       }
     ],
     [
@@ -143,7 +143,7 @@
         "label": "or",
         "input": [ 0, 2 ],
         "output": [ 1 ],
-        "processing": "lambda x02: any(x02)"
+        "processing": "lambda x02: any_v(x02)"
       }
     ],
     [
@@ -152,7 +152,7 @@
         "label": "or",
         "input": [ 1, 2, 3 ],
         "output": [ 0 ],
-        "processing": "lambda x123: any(x123)"
+        "processing": "lambda x123: any_v(x123)"
       }
     ],
     [
@@ -228,7 +228,7 @@
         "label": "packer 3 to 1",
         "input": [0, 3, 2],
         "output": [1],
-        "processing": "lambda x023: [x023]"
+        "processing": "lambda x023: x023"
       }
     ],
     [

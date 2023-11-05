@@ -18,7 +18,7 @@ class ColorSchema:
     toolsmenu_bg_color = "#4B5563"
     toolsmenu_border_color = "#000000"
     toolsmenu_active_cell_color = "#FFFFFF"
-    toolsmenu_vscroll_step = 25
+    toolsmenu_vscroll_step = 64
     highlighting_color = "#2e70ff"
 
 

@@ -16,6 +16,13 @@ def any_v(arr):
     return r
 
 
+def all_v(arr):
+    r = False
+    for v in arr:
+        r = r and v
+    return r
+
+
 class LogicProcessing:
     def __init__(self, field: ChunkGrid, tileset: TileSet):
         self.field = field
@@ -255,6 +262,7 @@ class CompilLogic:
         return self.path_groups_value[group_id]
 
     def run_tile(self, pos, last_pos=None):
+        global all_v, any_v
         x, y = pos
         tile = self.field[pos]
         dprint("{run", tile, pos, )
@@ -286,21 +294,28 @@ class CompilLogic:
                         val = False
                 # print("i_dd", i_dd, input_pos, input_tile, "val", val)
                 inputs_v.append(val)
-            if len(inputs_v) == 1:
+            if len(prop["input"]) == 1:
                 inputs_v = inputs_v[0]
             # Run function
-            get_input = self.field.get_function_input
-            set_result = self.field.set_function_result
-            switch = lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction))
+            spec_vars = {
+                "self": self,
+                "get_input": self.field.get_function_input,
+                "set_result": self.field.set_function_result,
+                "switch": lambda new_tile_key: self.field.__setitem__(pos, (new_tile_key, direction)),
+                "any_v": any_v,
+                "all_v": all_v
+            }
             # run tile processing
             if prop.get("is_function", False):
                 _output_v = prop["field"].run_function(prop, inputs_v, self.tileset)
             else:
-                _output_v = eval(prop["processing"], locals())(inputs_v)
+                f = eval(prop["processing"], spec_vars)
+                _output_v = f(inputs_v)
+
                 print(pos, tile_key, inputs_v, _output_v)
         output_t = [False] * 4
         if prop["output"]:
-            if not isinstance(_output_v, (list, tuple)):
+            if len(prop["output"]) == 1:
                 output_t[(prop["output"][0] + direction) % 4] = _output_v
             else:
                 for out_d, out_v in zip(prop["output"], _output_v):

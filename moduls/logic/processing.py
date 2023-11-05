@@ -17,7 +17,7 @@ def any_v(arr):
 
 
 def all_v(arr):
-    r = False
+    r = True
     for v in arr:
         r = r and v
     return r

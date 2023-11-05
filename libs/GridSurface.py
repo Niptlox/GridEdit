@@ -334,7 +334,6 @@ class Grid:
                     if data.get("version") in BACKWARD_COMPATIBILITY:
                         self.main_field.set_all(data["field"])
                         self.tileset.set_all(data["tileset"])
-                        print(vars(self.tileset.functions["func_f0_0"]["field"]))
                         self.field = self.main_field
                     else:
                         self.main_field.set_all(data)

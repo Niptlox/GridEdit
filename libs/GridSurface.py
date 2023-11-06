@@ -245,12 +245,13 @@ class Grid:
                 img = self.tileset.get_tile_image(tile, scale=self.zoom_scale)
                 surface.blit(img, ((self.scroll[0] + tpos[0]) * _tile_side, (self.scroll[1] + tpos[1]) * _tile_side))
 
-    def set_line(self):
+    def set_line(self, save_history=True):
         row, column = self.get_line_tiles()
-        for tpos, tile in row | column:
-            self.set_tile(tpos, tile)
+        self.set_from_dict({tpos: tile for tpos, tile in row | column}, save_history=save_history)
         self.line = None
         self.update_display()
+
+
 
     def draw(self, surface):
         surface.blit(self.display, self.rect)
@@ -309,6 +310,8 @@ class Grid:
             self.set_tile(action["pos"], action["old"], save_history=False)
         elif action["type"] == "replace_group":
             self.paste(action["pos"], action["old"], save_history=False)
+        elif action["type"] == "replace_group_d":
+            self.set_from_dict(action["old"], save_history=False)
 
     def redo(self):
         print("r", self.history_iter)
@@ -320,6 +323,16 @@ class Grid:
             self.set_tile(action["pos"], action["new"], save_history=False)
         elif action["type"] == "replace_group":
             self.paste(action["pos"], action["new"], save_history=False)
+        elif action["type"] == "replace_group_d":
+            self.set_from_dict(action["new"], save_history=False)
+
+    def set_from_dict(self, new, save_history=True):
+        old = {}
+        for tpos, tile in new.items():
+            old[tpos] = self.field[tpos]
+            self.set_tile(tpos, tile, save_history=False)
+        if save_history:
+            self.add_action_history({"type": "replace_group_d", "old": old, "new": new})
 
     def open(self, directory=None):
         if directory is None:

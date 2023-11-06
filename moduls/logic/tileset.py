@@ -52,7 +52,7 @@ class TileSet(_TileSet):
     def __setstate__(self, state):
         super().__setstate__(state)
         self.functions = {}
-        self.function_last_id = state["function_last_id"]
+        self.function_last_id = max([f["color_num"] for f in self.functions.values()]+[0])
         for f in state["functions"].values():
             self.add_function_data(f)
 

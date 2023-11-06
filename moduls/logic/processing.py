@@ -1,7 +1,9 @@
+from typing import Iterable
+
 from libs.ChunkGrid import ChunkGrid
 from libs.Tileset import TileSet, TOP, RIGHT, BOTTOM, LEFT
 
-DEBUG = True
+DEBUG = False
 
 
 def dprint(*args, **kwargs):
@@ -318,8 +320,11 @@ class CompilLogic:
             if len(prop["output"]) == 1:
                 output_t[(prop["output"][0] + direction) % 4] = _output_v
             else:
-                for out_d, out_v in zip(prop["output"], _output_v):
-                    output_t[(out_d + direction) % 4] = out_v
+                if isinstance(_output_v, Iterable):
+                    for out_d, out_v in zip(prop["output"], _output_v):
+                        output_t[(out_d + direction) % 4] = out_v
+                else:
+                    output_t = [None] * 4
         dprint("res", tile, pos, inputs_v, output_t, "}")
         self.runed[pos] = output_t
         return output_t
@@ -358,8 +363,6 @@ def _main(tile_grid: ChunkGrid, tileset):
 
 def main(tile_grid: ChunkGrid, tileset, log=print):
     comp = CompilLogic(tile_grid, tileset)
-    comp.run()
-    return
     try:
         comp.run()
     except RecursionError as excRec:

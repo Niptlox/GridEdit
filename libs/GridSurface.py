@@ -340,7 +340,7 @@ class Grid:
                                       filetypes=(("", "*" + self.tileset.file_extension),),
                                       title="Открыть файл", initialdir="./saves/", saveas=False)
         if directory:
-            # try:
+            try:
                 set_filename(directory)
                 with open(FILENAME, "rb") as f:
                     data = pickle.load(f)
@@ -352,8 +352,8 @@ class Grid:
                         self.main_field.set_all(data)
                         self.field = self.main_field
                 self.show_message(f"Opened: {directory}")
-            # except Exception as exc:
-            #     self.show_message(f"Error open file: {exc}")
+            except Exception as exc:
+                self.show_message(f"Error open file: {exc}")
 
     def save(self, saveas=False):
         global FILENAME
@@ -364,10 +364,10 @@ class Grid:
             if directory:
                 set_filename(directory)
         if FILENAME:
-            # try:
+            try:
                 with open(FILENAME, "wb") as f:
                     data = {"version": VERSION, "field": self.main_field, "tileset": self.tileset}
                     pickle.dump(data, file=f)
                 self.show_message(f"Saved: {FILENAME}")
-            # except Exception as exc:
-            #     self.show_message(f"Error save file: {exc}")
+            except Exception as exc:
+                self.show_message(f"Error save file: {exc}")

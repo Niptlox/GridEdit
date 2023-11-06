@@ -234,7 +234,7 @@
     [
       "unpacker1to3",
       {
-        "label": "packer 3 to 1",
+        "label": "unpacker 1 to 3",
         "input": [3],
         "output": [0, 1, 2],
         "processing": "lambda x: x"

@@ -56,12 +56,17 @@ class Grid(_Grid):
         if self.app.tools_menu.magic_line_mode and row:
             joint_p, joint_t = (row & column).pop()
             row = {((p, ("path_+", 0)) if p == joint_p else
-                    ((p, ("bridge_+", 0))) if self.main_field[p] in {("path_I", 0), ("path_I", 2), ("bridge_+", 0),
-                                                                     ("bridge_+", 1), ("bridge_+", 2), ("bridge_+", 3)}
+                    ((p, ("bridge_+", p[1] % 2 * 2 + 1))) if self.main_field[p] in {("path_I", 0), ("path_I", 2),
+                                                                                    ("bridge_+", 0),
+                                                                                    ("bridge_+", 1), ("bridge_+", 2),
+                                                                                    ("bridge_+", 3)}
                     else (p, (t[0], 1))) for p, t in row}
-            column = {((p, ("bridge_+", 0)) if self.main_field[p] in {("path_I", 1), ("path_I", 3), ("bridge_+", 0),
-                                                                      ("bridge_+", 1), ("bridge_+", 2), ("bridge_+", 3)}
-                       else (p, (t[0], 0))) for p, t in column if p != joint_p}
+            column = {
+                ((p, ("bridge_+", p[0] % 2 * 2)) if self.main_field[p] in {("path_I", 1), ("path_I", 3),
+                                                                           ("bridge_+", 0),
+                                                                           ("bridge_+", 1), ("bridge_+", 2),
+                                                                           ("bridge_+", 3)}
+                 else (p, (t[0], 0))) for p, t in column if p != joint_p}
 
         return row, column
 

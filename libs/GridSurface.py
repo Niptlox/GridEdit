@@ -12,16 +12,20 @@ VERSION = "v0.2"
 BACKWARD_COMPATIBILITY = set()
 BACKWARD_COMPATIBILITY.add(VERSION)
 FILENAME = "saves/newfile.lg"
-CAPTION = "GridEdit1"
+CAPTION = ["GridEdit1"]
 
 
 # logger.setLevel()
 def set_filename(new_filename):
     global FILENAME, CAPTION
     FILENAME = new_filename
-    CAPTION = f"GridEdit '{FILENAME}'"
-    pg.display.set_caption(CAPTION)
+    CAPTION = [f"GridEdit '{FILENAME}'"]
+    update_caption()
     return FILENAME
+
+
+def update_caption():
+    pg.display.set_caption(" ".join(CAPTION))
 
 
 def get_caption():
@@ -51,6 +55,7 @@ class Grid:
         self.history = []
         self.history_iter = -1  # last index( -1, -2, -3...)
         self.show_message = show_message
+        self.is_saved = False
         # if FILENAME:
         #     self.open(FILENAME)
 
@@ -251,8 +256,6 @@ class Grid:
         self.line = None
         self.update_display()
 
-
-
     def draw(self, surface):
         surface.blit(self.display, self.rect)
         if self.rect.collidepoint(pg.mouse.get_pos()) and self.active_tile:
@@ -293,7 +296,9 @@ class Grid:
         if save_history:
             self.add_action_history({"type": "replace_group", "pos": pos, "old": last, "new": list(buffer)})
 
-    def add_action_history(self, action):
+    def add_action_history(self, action: dict):
+        self.set_is_saved(False)
+        action["field"] = self.field
         if self.history_iter < -1:
             del self.history[self.history_iter + 1:]
             self.history_iter = -1
@@ -301,10 +306,13 @@ class Grid:
         print("action", action)
 
     def undo(self):
+        self.set_is_saved(False)
         print("u", self.history_iter)
         if not self.history or self.history_iter < -len(self.history):
             return
         action = self.history[self.history_iter]
+        _field = self.field
+        self.field = action.get("field", self.field)
         self.history_iter -= 1
         if action["type"] == "replace":
             self.set_tile(action["pos"], action["old"], save_history=False)
@@ -312,19 +320,24 @@ class Grid:
             self.paste(action["pos"], action["old"], save_history=False)
         elif action["type"] == "replace_group_d":
             self.set_from_dict(action["old"], save_history=False)
+        self.field = _field
 
     def redo(self):
+        self.set_is_saved(False)
         print("r", self.history_iter)
         if not self.history or self.history_iter == -1:
             return
-        self.history_iter += 1
         action = self.history[self.history_iter]
+        _field = self.field
+        self.field = action.get("field", self.field)
+        self.history_iter += 1
         if action["type"] == "replace":
             self.set_tile(action["pos"], action["new"], save_history=False)
         elif action["type"] == "replace_group":
             self.paste(action["pos"], action["new"], save_history=False)
         elif action["type"] == "replace_group_d":
             self.set_from_dict(action["new"], save_history=False)
+        self.field = _field
 
     def set_from_dict(self, new, save_history=True):
         old = {}
@@ -352,6 +365,7 @@ class Grid:
                         self.main_field.set_all(data)
                         self.field = self.main_field
                 self.show_message(f"Opened: {directory}")
+                self.set_is_saved(True)
             except Exception as exc:
                 self.show_message(f"Error open file: {exc}")
 
@@ -369,5 +383,18 @@ class Grid:
                     data = {"version": VERSION, "field": self.main_field, "tileset": self.tileset}
                     pickle.dump(data, file=f)
                 self.show_message(f"Saved: {FILENAME}")
+                self.set_is_saved(True)
             except Exception as exc:
                 self.show_message(f"Error save file: {exc}")
+
+    def set_is_saved(self, is_saved: bool):
+        self.is_saved = is_saved
+        t = "*not saved"
+        if is_saved:
+            if t in CAPTION:
+                CAPTION.remove(t)
+        else:
+            if t not in CAPTION:
+                CAPTION.append(t)
+        update_caption()
+

@@ -1,5 +1,5 @@
 from libs import ColorSchema
-from libs.GridSurface import Grid as _Grid, CAPTION, get_caption
+from libs.GridSurface import Grid as _Grid, CAPTION, get_caption, update_caption
 from .processing import main
 from .chunk_grid import ChunkGrid
 from .tileset import TileSet
@@ -56,13 +56,13 @@ class Grid(_Grid):
         if self.app.tools_menu.magic_line_mode and row:
             joint_p, joint_t = (row & column).pop()
             row = {((p, ("path_+", 0)) if p == joint_p else
-                    (p, ("bridge_+", p[1] % 2 * 2 + 1)) if self.main_field[p] in {("path_I", 0), ("path_I", 2),
+                    (p, ("bridge_+", p[1] % 2 * 2 + 1)) if self.field[p] in {("path_I", 0), ("path_I", 2),
                                                                                   ("bridge_+", 0),
                                                                                   ("bridge_+", 1), ("bridge_+", 2),
                                                                                   ("bridge_+", 3)}
                     else (p, (t[0], 1))) for p, t in row}
             column = {
-                ((p, ("bridge_+", p[0] % 2 * 2)) if self.main_field[p] in {("path_I", 1), ("path_I", 3),
+                ((p, ("bridge_+", p[0] % 2 * 2)) if self.field[p] in {("path_I", 1), ("path_I", 3),
                                                                            ("bridge_+", 0),
                                                                            ("bridge_+", 1), ("bridge_+", 2),
                                                                            ("bridge_+", 3)}
@@ -71,13 +71,19 @@ class Grid(_Grid):
         return row, column
 
     def open_function(self, f):
+        if self.edit_function:
+            self.close_function()
         self.field = f["field"]
         self.edit_function = f
-        pg.display.set_caption(get_caption() + f' ({f["name"]})')
+        caption = get_caption()
+        caption[1:] = [f'({f["name"]})'] + caption[1:]
+        update_caption()
         self.update_display()
 
     def close_function(self):
         self.field = self.main_field
         self.edit_function = None
         self.update_display()
-        pg.display.set_caption(get_caption())
+        get_caption().pop(1)
+        update_caption()
+

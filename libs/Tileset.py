@@ -141,6 +141,7 @@ class TileSet(UClass):
             self.tiles_dict[key] = len(self.tiles) - 1
 
         self._properties[key] = {} if properties is None else properties
+        self.lst_tilekeys_of_groups.append(key)
 
     def get_tiles(self):
         return self.tiles

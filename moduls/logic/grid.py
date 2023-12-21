@@ -84,6 +84,7 @@ class Grid(_Grid):
         self.field = self.main_field
         self.edit_function = None
         self.update_display()
-        get_caption().pop(1)
-        update_caption()
+        if len(get_caption()) > 1:
+            get_caption().pop(1)
+            update_caption()
 

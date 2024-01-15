@@ -1,4 +1,5 @@
 from libs import ColorSchema
+from libs.CommandHistory import wrap_cls
 from libs.GridSurface import Grid as _Grid, CAPTION, get_caption, update_caption
 from .processing import main
 from .chunk_grid import ChunkGrid
@@ -9,8 +10,9 @@ import pygame as pg
 class Grid(_Grid):
     pass
 
-    def __init__(self, app, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print):
-        super(Grid, self).__init__(app, rect, color_schema, tileset, show_message)
+    def __init__(self, app, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print,
+                 command_history=None):
+        super(Grid, self).__init__(app, rect, color_schema, tileset, show_message, command_history=command_history)
         self.main_field = self.field = ChunkGrid()
         # self.f = tileset.new_function("main", self.field)
         self.edit_function = None
@@ -57,15 +59,15 @@ class Grid(_Grid):
             joint_p, joint_t = (row & column).pop()
             row = {((p, ("path_+", 0)) if p == joint_p else
                     (p, ("bridge_+", p[1] % 2 * 2 + 1)) if self.field[p] in {("path_I", 0), ("path_I", 2),
-                                                                                  ("bridge_+", 0),
-                                                                                  ("bridge_+", 1), ("bridge_+", 2),
-                                                                                  ("bridge_+", 3)}
+                                                                             ("bridge_+", 0),
+                                                                             ("bridge_+", 1), ("bridge_+", 2),
+                                                                             ("bridge_+", 3)}
                     else (p, (t[0], 1))) for p, t in row}
             column = {
                 ((p, ("bridge_+", p[0] % 2 * 2)) if self.field[p] in {("path_I", 1), ("path_I", 3),
-                                                                           ("bridge_+", 0),
-                                                                           ("bridge_+", 1), ("bridge_+", 2),
-                                                                           ("bridge_+", 3)}
+                                                                      ("bridge_+", 0),
+                                                                      ("bridge_+", 1), ("bridge_+", 2),
+                                                                      ("bridge_+", 3)}
                  else (p, (t[0], 0))) for p, t in column if p != joint_p}
 
         return row, column
@@ -87,4 +89,3 @@ class Grid(_Grid):
         if len(get_caption()) > 1:
             get_caption().pop(1)
             update_caption()
-

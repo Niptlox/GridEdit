@@ -1,6 +1,7 @@
 import pygame as pg
 
 from libs.ColorSchema import ColorSchema
+from libs.CommandHistory import CommandHistory
 from libs.PgUI import App
 from libs.PgUI.InfoMessage import InfoMessage
 # from libs.ToolsMenu import ToolsMenu
@@ -25,13 +26,14 @@ class GridEditApp(App.App):
         pg.display.set_caption(f"GridEdit")
         pg.display.set_icon(pg.image.load("icon.png"))
         super(GridEditApp, self).__init__(screen)
+        self.command_history = CommandHistory()
         self.tileset = TileSet()
         self.tileset.load("moduls/logic")
         self.color_schema = ColorSchema
         th = 250
         self.info_message = InfoMessage(self.rect.size)
         self.grid = Grid(self, (th, 0, self.rect.w - th, self.rect.h), self.color_schema, self.tileset,
-                         show_message=self.info_message.new)
+                         show_message=self.info_message.new, command_history=self.command_history)
         self.tools_menu = ToolsMenu(self, (0, 0, th, self.rect.h), self.color_schema, self.tileset,
                                     on_tool_selected=self.grid.set_tool_tile)
         self.ui_elements = [self.grid, self.tools_menu, self.info_message]

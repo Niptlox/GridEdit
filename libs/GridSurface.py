@@ -7,6 +7,7 @@ from libs.ChunkGrid import ChunkGrid, save, load, logger
 from libs.TkUI.filedialog import get_file_path
 from moduls.logic import processing
 from libs.Tileset import TileSet, int_list
+from libs.CommandHistory import ch, wrap_cls
 
 VERSION = "v0.2"
 BACKWARD_COMPATIBILITY = set()
@@ -32,8 +33,10 @@ def get_caption():
     return CAPTION
 
 
+@wrap_cls
 class Grid:
-    def __init__(self, app, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print):
+    def __init__(self, app, rect, color_schema=ColorSchema, tileset: TileSet = None, show_message=print,
+                 command_history=None):
         self.app = app
         self.rect = pg.Rect(rect)
         self.tile_side = 16
@@ -104,6 +107,7 @@ class Grid:
             self.active_tile = self.tileset.tiles[num][2]
 
     def set_tool_tile(self, tile):
+        # self.command_history()
         if tile is not None:
             self.active_tile = tile
 
@@ -129,6 +133,7 @@ class Grid:
             eval(on_click_str, globals(), locals())
             print(self.field[pos])
 
+    @ch.wrap_self
     def set_tile(self, pos, tile, save_history=True):
         if save_history:
             self.add_action_history({"type": "replace", "pos": pos, "old": self.field[pos], "new": tile})
@@ -398,3 +403,8 @@ class Grid:
                 CAPTION.append(t)
         update_caption()
 
+# gr = Grid("", (1,1,2,2))
+# gr = Grid("", (1,1,2,2))
+# gr = Grid("", (1,1,2,2))
+# gr = Grid("", (1,1,2,2))
+# gr.set_tile((0,0), ("",1))

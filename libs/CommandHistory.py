@@ -10,9 +10,13 @@ def get_class_path(cls) -> str:
 
 def wrap_cls(original_class):
     def __init__(self, *args, **kws):
+        if "_count" not in self.__class__.__dict__:
+            self.__class__._count = 0
+        else:
+            self.__class__._count += 1
         self._id = self.__class__.__name__
         if self._id in all_classes:
-            self._id += "__" + str(id(self))
+            self._id += "__" + str(self.__class__._count)
         self.get_id = lambda _self=self: _self._id
         orig_init(self, *args, **kws)  # Call the original __init__
         all_classes[self._id] = self
@@ -59,11 +63,11 @@ class CommandHistory:
             self.new(cls, ".", func.__name__, "(", ", ".join(map(repr, args)), s_kwargs, ")")
 
             return result
+
         return _wrapper
 
     def run(self, command):
         exec(command, all_classes, globals())
-
 
 
 ch = CommandHistory()
